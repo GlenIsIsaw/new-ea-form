@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Row, Col, Form, Button } from "react-bootstrap";
 import DataPrivacyModal from "./components/DataPrivacyModal";
 import InstructionModal from "./components/InstructionModal";
 import ConfirmationModal from "./components/ConfirmationModal";
 import { MUNICIPALITIES, BARANGAYS } from "./data/locations";
 import ReviewModal from "./components/ReviewModal";
+import SuccessPage from "./components/SucessPageWrapper";
 
 const MONTHS = [
   "January",
@@ -24,14 +25,25 @@ const EXTENSIONS = ["Jr.", "Sr.", "II", "III", "IV", "V"];
 const SEX = ["Male", "Female"];
 const CIVIL = ["Single", "Married", "Widowed", "Legally Separated", "Annulled"];
 const THIS_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: 101 }, (_, i) => THIS_YEAR - i);
+const MAX_BIRTH_YEAR = 2014;
+const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
 
 const NAME_RE = /^[A-Za-zÀ-ÿñÑ]+(?:[ '-][A-Za-zÀ-ÿñÑ]+)*$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const daysIn = (m, y) => (m ? new Date(y || 2024, Number(m), 0).getDate() : 31);
 
+const hasOccupation = (v) =>
+  !!v.trim() && !/^(none|n\/?a|na|nil|-+|not applicable)$/i.test(v.trim());
+
 const validators = {
+  salary: (v, f) =>
+  !hasOccupation(f.occupation)
+    ? ""
+    : !v || Number(v) <= 0
+      ? "Monthly salary is required when you enter an occupation."
+      : "",
+
   lastName: (v) =>
     !v.trim()
       ? "Please enter your last name."
@@ -57,10 +69,12 @@ const validators = {
   },
   sex: (v) => (v ? "" : "Please select your sex."),
   civilStatus: (v) => (v ? "" : "Please select your civil status."),
-  birthday: (_, f) =>
-    !f.bMonth || !f.bDay || !f.bYear
-      ? "Please select your complete birthday."
-      : "",
+ birthday: (_, f) => {
+  if (!f.bMonth || !f.bDay || !f.bYear) return "Please select your complete birthday.";
+  return Number(f.bYear) > MAX_BIRTH_YEAR
+    ? `Birth year must be ${MAX_BIRTH_YEAR} or earlier.`
+    : "";
+},
   contact: (v) =>
     !v
       ? "Please enter your contact number."
@@ -125,6 +139,10 @@ const [showReview, setShowReview] = useState(false);
 const [showConfirm, setShowConfirm] = useState(false);
 const [showResetModal, setShowResetModal] = useState(false);
 const [reviewData, setReviewData] = useState({});
+const [showLeave, setShowLeave] = useState(false);
+const leavingRef = useRef(false);
+const guardedRef = useRef(false);
+const isDirty = JSON.stringify(f) !== JSON.stringify(INITIAL);
 
   const check = (name, next = f) => validators[name]?.(next[name], next) ?? "";
   const setError = (name, msg) => setErrors((p) => ({ ...p, [name]: msg }));
@@ -139,6 +157,11 @@ const [reviewData, setReviewData] = useState({});
       return next;
     });
   };
+
+  const nameText = (name) => (e) => {
+  update(name, e.target.value.normalize("NFC"));
+  if (errors[name]) setError(name, "");
+};
 
   const text = (name) => (e) => {
     update(name, e.target.value);
@@ -190,41 +213,51 @@ const reset = () => {
   setDone(false);
 };
 
-  if (done)
-    return (
-      <div className="success-page-wrapper">
-        <div className="success-card">
-          <div className="success-icon-wrap">
-            <svg className="success-checkmark" viewBox="0 0 52 52">
-              <circle
-                className="success-checkmark-circle"
-                cx="26"
-                cy="26"
-                r="25"
-                fill="none"
-              />
-              <path
-                className="success-checkmark-check"
-                fill="none"
-                d="M14 27l8 8 16-16"
-              />
-            </svg>
-          </div>
-          <h2 className="success-title">Form Submitted</h2>
-          <p className="success-message">
-            Thank you,{" "}
-            <strong>
-              {f.firstName} {f.lastName}
-            </strong>
-            . Your information was submitted successfully.
-          </p>
-          <div className="success-divider" />
-          <button className="success-btn" onClick={reset}>
-            Done
-          </button>
-        </div>
-      </div>
-    );
+useEffect(() => {
+  if (!isDirty || done) return;
+
+  // Tab close / refresh: browser's own warning
+  const onBeforeUnload = (e) => {
+    if (leavingRef.current) return;
+    e.preventDefault();
+    e.returnValue = "";
+  };
+
+  // Back button: add one guard entry so we can intercept it
+  if (!guardedRef.current) {
+    window.history.pushState({ formGuard: true }, "");
+    guardedRef.current = true;
+  }
+  const onPopState = () => {
+    if (leavingRef.current) return;
+    window.history.pushState({ formGuard: true }, ""); // stay on the page
+    setShowLeave(true);
+  };
+
+  window.addEventListener("beforeunload", onBeforeUnload);
+  window.addEventListener("popstate", onPopState);
+  return () => {
+    window.removeEventListener("beforeunload", onBeforeUnload);
+    window.removeEventListener("popstate", onPopState);
+  };
+}, [isDirty, done]);
+
+const leavePage = () => {
+  leavingRef.current = true;
+  setShowLeave(false);
+  window.history.go(-2); // skips the guard entries
+  setTimeout(() => { leavingRef.current = false; }, 1500); // if there was nowhere to go back to
+};
+
+if (done)
+  return (
+    <SuccessPage
+      onNewSubmission={() => {
+        setF(INITIAL);
+        setErrors({});
+      }}
+    />
+  );
 
   const barangays = BARANGAYS[f.municipality] || [];
 
@@ -278,7 +311,7 @@ const reset = () => {
                 <Label required>Last Name</Label>
                 <Form.Control
                   value={f.lastName}
-                  onChange={text("lastName")}
+                  onChange={nameText("lastName")}
                   onBlur={blur("lastName")}
                   isInvalid={!!errors.lastName}
                   autoComplete="family-name"
@@ -289,7 +322,7 @@ const reset = () => {
                 <Label required>First Name</Label>
                 <Form.Control
                   value={f.firstName}
-                  onChange={text("firstName")}
+                  onChange={nameText("firstName")}
                   onBlur={blur("firstName")}
                   isInvalid={!!errors.firstName}
                   autoComplete="given-name"
@@ -300,7 +333,7 @@ const reset = () => {
                 <Label>Middle Name</Label>
                 <Form.Control
                   value={f.middleName}
-                  onChange={text("middleName")}
+                  onChange={nameText("middleName")}
                   onBlur={blur("middleName")}
                   isInvalid={!!errors.middleName}
                   autoComplete="additional-name"
@@ -435,21 +468,31 @@ const reset = () => {
                 <Err msg={errors.philsys} />
               </Col>
               <Col xs={12} md={6}>
-                <Label>Occupation</Label>
-                <Form.Control
-                  value={f.occupation}
-                  onChange={text("occupation")}
-                />
-              </Col>
-              <Col xs={12} md={6}>
-                <Label>Monthly Salary</Label>
-                <Form.Control
-                  inputMode="numeric"
-                  value={f.salary}
-                  onChange={digits("salary", 9)}
-                  placeholder="Numbers only"
-                />
-              </Col>
+  <Label>Occupation</Label>
+  <Form.Control
+    value={f.occupation}
+    onChange={(e) => {
+      text("occupation")(e);
+      if (errors.salary) setError("salary", "");
+    }}
+    placeholder="Type None if you have no occupation"
+  />
+</Col>
+<Col xs={12} md={6}>
+  <Label required={hasOccupation(f.occupation)}>Monthly Salary</Label>
+  <Form.Control
+    inputMode="numeric"
+    value={f.salary}
+    onChange={digits("salary", 9)}
+    onBlur={blur("salary")}
+    isInvalid={!!errors.salary}
+    placeholder="Numbers only"
+  />
+  <Err msg={errors.salary} />
+  {!errors.salary && hasOccupation(f.occupation) && (
+    <div className="field-hint">Required because you entered an occupation.</div>
+  )}
+</Col>
               <Col xs={12} md={6}>
                 <Label required>Contact Number</Label>
                 <Form.Control
@@ -578,6 +621,18 @@ const reset = () => {
   message="Are you sure you want to reset the form?"
   subMessage="All changes will be lost."
   confirmText="Yes, Reset"
+  confirmVariant="danger"
+/>
+
+<ConfirmationModal
+  show={showLeave}
+  onHide={() => setShowLeave(false)}
+  onConfirm={leavePage}
+  title="Leave Page"
+  message="Are you sure you want to leave?"
+  subMessage="Changes will not be saved. Your form will be lost."
+  confirmText="Leave"
+  cancelText="Stay"
   confirmVariant="danger"
 />
     </div>
