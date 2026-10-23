@@ -8,22 +8,22 @@ import ReviewModal from "./components/ReviewModal";
 import SuccessPage from "./components/SucessPageWrapper";
 
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "JANUARY",
+  "FEBRUARY",
+  "MARCH",
+  "APRIL",
+  "MAY",
+  "JUNE",
+  "JULY",
+  "AUGUST",
+  "SEPTEMBER",
+  "OCTOBER",
+  "NOVEMBER",
+  "DECEMBER",
 ];
-const EXTENSIONS = ["Jr.", "Sr.", "II", "III", "IV", "V"];
-const SEX = ["Male", "Female"];
-const CIVIL = ["Single", "Married", "Widowed", "Legally Separated", "Annulled"];
+const EXTENSIONS = ["JR.", "SR.", "II", "III", "IV", "V"];
+const SEX = ["MALE", "FEMALE"];
+const CIVIL = ["SINGLE", "MARRIED", "SEPARATED", "WIDOW/WIDOWER", "COMMON-LAW"];
 const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
@@ -38,11 +38,11 @@ const hasOccupation = (v) =>
 
 const validators = {
   salary: (v, f) =>
-  !hasOccupation(f.occupation)
-    ? ""
-    : !v || Number(v) <= 0
-      ? "Monthly salary is required when you enter an occupation."
-      : "",
+    !hasOccupation(f.occupation)
+      ? ""
+      : !v || Number(v) <= 0
+        ? "Monthly salary is required when you enter an occupation."
+        : "",
 
   lastName: (v) =>
     !v.trim()
@@ -69,12 +69,13 @@ const validators = {
   },
   sex: (v) => (v ? "" : "Please select your sex."),
   civilStatus: (v) => (v ? "" : "Please select your civil status."),
- birthday: (_, f) => {
-  if (!f.bMonth || !f.bDay || !f.bYear) return "Please select your complete birthday.";
-  return Number(f.bYear) > MAX_BIRTH_YEAR
-    ? `Birth year must be ${MAX_BIRTH_YEAR} or earlier.`
-    : "";
-},
+  birthday: (_, f) => {
+    if (!f.bMonth || !f.bDay || !f.bYear)
+      return "Please select your complete birthday.";
+    return Number(f.bYear) > MAX_BIRTH_YEAR
+      ? `Birth year must be ${MAX_BIRTH_YEAR} or earlier.`
+      : "";
+  },
   contact: (v) =>
     !v
       ? "Please enter your contact number."
@@ -135,14 +136,14 @@ export default function App() {
   const [errors, setErrors] = useState({});
   const [done, setDone] = useState(false);
   const [step, setStep] = useState("privacy"); // privacy -> instructions -> form
-const [showReview, setShowReview] = useState(false);
-const [showConfirm, setShowConfirm] = useState(false);
-const [showResetModal, setShowResetModal] = useState(false);
-const [reviewData, setReviewData] = useState({});
-const [showLeave, setShowLeave] = useState(false);
-const leavingRef = useRef(false);
-const guardedRef = useRef(false);
-const isDirty = JSON.stringify(f) !== JSON.stringify(INITIAL);
+  const [showReview, setShowReview] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [reviewData, setReviewData] = useState({});
+  const [showLeave, setShowLeave] = useState(false);
+  const leavingRef = useRef(false);
+  const guardedRef = useRef(false);
+  const isDirty = JSON.stringify(f) !== JSON.stringify(INITIAL);
 
   const check = (name, next = f) => validators[name]?.(next[name], next) ?? "";
   const setError = (name, msg) => setErrors((p) => ({ ...p, [name]: msg }));
@@ -159,9 +160,9 @@ const isDirty = JSON.stringify(f) !== JSON.stringify(INITIAL);
   };
 
   const nameText = (name) => (e) => {
-  update(name, e.target.value.normalize("NFC"));
-  if (errors[name]) setError(name, "");
-};
+    update(name, e.target.value.normalize("NFC"));
+    if (errors[name]) setError(name, "");
+  };
 
   const text = (name) => (e) => {
     update(name, e.target.value);
@@ -178,86 +179,88 @@ const isDirty = JSON.stringify(f) !== JSON.stringify(INITIAL);
   };
 
   const review = (e) => {
-  e.preventDefault();
-  const found = {};
-  Object.keys(validators).forEach((k) => {
-    const m = check(k);
-    if (m) found[k] = m;
-  });
-  setErrors(found);
-  if (Object.keys(found).length) {
-    setTimeout(() => {
-      document
-        .querySelector(".is-invalid, .d-block.invalid-feedback")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 0);
-    return;
-  }
-  setReviewData({
-    ...f,
-    birthday: `${MONTHS[f.bMonth - 1]} ${f.bDay}, ${f.bYear}`,
-    salary: f.salary ? `₱${Number(f.salary).toLocaleString("en-PH")}` : "",
-  });
-  setShowReview(true);
-};
-
-const submit = () => {
-  setShowConfirm(false);
-  // TODO: send `f` to the Google Apps Script web app
-  setDone(true);
-};
-
-const reset = () => {
-  setF(INITIAL);
-  setErrors({});
-  setDone(false);
-};
-
-useEffect(() => {
-  if (!isDirty || done) return;
-
-  // Tab close / refresh: browser's own warning
-  const onBeforeUnload = (e) => {
-    if (leavingRef.current) return;
     e.preventDefault();
-    e.returnValue = "";
+    const found = {};
+    Object.keys(validators).forEach((k) => {
+      const m = check(k);
+      if (m) found[k] = m;
+    });
+    setErrors(found);
+    if (Object.keys(found).length) {
+      setTimeout(() => {
+        document
+          .querySelector(".is-invalid, .d-block.invalid-feedback")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+      return;
+    }
+    setReviewData({
+      ...f,
+      birthday: `${MONTHS[f.bMonth - 1]} ${f.bDay}, ${f.bYear}`,
+      salary: f.salary ? `₱${Number(f.salary).toLocaleString("en-PH")}` : "",
+    });
+    setShowReview(true);
   };
 
-  // Back button: add one guard entry so we can intercept it
-  if (!guardedRef.current) {
-    window.history.pushState({ formGuard: true }, "");
-    guardedRef.current = true;
-  }
-  const onPopState = () => {
-    if (leavingRef.current) return;
-    window.history.pushState({ formGuard: true }, ""); // stay on the page
-    setShowLeave(true);
+  const submit = () => {
+    setShowConfirm(false);
+    // TODO: send `f` to the Google Apps Script web app
+    setDone(true);
   };
 
-  window.addEventListener("beforeunload", onBeforeUnload);
-  window.addEventListener("popstate", onPopState);
-  return () => {
-    window.removeEventListener("beforeunload", onBeforeUnload);
-    window.removeEventListener("popstate", onPopState);
+  const reset = () => {
+    setF(INITIAL);
+    setErrors({});
+    setDone(false);
   };
-}, [isDirty, done]);
 
-const leavePage = () => {
-  leavingRef.current = true;
-  setShowLeave(false);
-  window.history.go(-2); // skips the guard entries
-  setTimeout(() => { leavingRef.current = false; }, 1500); // if there was nowhere to go back to
-};
+  useEffect(() => {
+    if (!isDirty || done) return;
 
-if (done)
-  return (
-    <SuccessPage
-      onNewSubmission={() => {
-        setF(INITIAL);
-        setErrors({});
-      }}
-    />
-  );
+    // Tab close / refresh: browser's own warning
+    const onBeforeUnload = (e) => {
+      if (leavingRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    // Back button: add one guard entry so we can intercept it
+    if (!guardedRef.current) {
+      window.history.pushState({ formGuard: true }, "");
+      guardedRef.current = true;
+    }
+    const onPopState = () => {
+      if (leavingRef.current) return;
+      window.history.pushState({ formGuard: true }, ""); // stay on the page
+      setShowLeave(true);
+    };
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [isDirty, done]);
+
+  const leavePage = () => {
+    leavingRef.current = true;
+    setShowLeave(false);
+    window.history.go(-2); // skips the guard entries
+    setTimeout(() => {
+      leavingRef.current = false;
+    }, 1500); // if there was nowhere to go back to
+  };
+
+  if (done)
+    return (
+      <SuccessPage
+        onNewSubmission={() => {
+          setF(INITIAL);
+          setErrors({});
+        }}
+      />
+    );
 
   const barangays = BARANGAYS[f.municipality] || [];
 
@@ -298,7 +301,7 @@ if (done)
   return (
     <div className="form-wrapper">
       <div className="form-header">
-        <h1>Online Registration Form</h1>
+        <h1>Educational Assistance 2026</h1>
         <p>Please fill out all required fields marked with an asterisk (*)</p>
       </div>
 
@@ -341,7 +344,7 @@ if (done)
                 <Err msg={errors.middleName} />
                 {!errors.middleName && (
                   <div className="field-hint">
-                    Full middle name only, no initials. Leave blank if none.
+                    
                   </div>
                 )}
               </Col>
@@ -468,31 +471,34 @@ if (done)
                 <Err msg={errors.philsys} />
               </Col>
               <Col xs={12} md={6}>
-  <Label>Occupation</Label>
-  <Form.Control
-    value={f.occupation}
-    onChange={(e) => {
-      text("occupation")(e);
-      if (errors.salary) setError("salary", "");
-    }}
-    placeholder="Type None if you have no occupation"
-  />
-</Col>
-<Col xs={12} md={6}>
-  <Label required={hasOccupation(f.occupation)}>Monthly Salary</Label>
-  <Form.Control
-    inputMode="numeric"
-    value={f.salary}
-    onChange={digits("salary", 9)}
-    onBlur={blur("salary")}
-    isInvalid={!!errors.salary}
-    placeholder="Numbers only"
-  />
-  <Err msg={errors.salary} />
-  {!errors.salary && hasOccupation(f.occupation) && (
-    <div className="field-hint">Required because you entered an occupation.</div>
-  )}
-</Col>
+                <Label>Occupation</Label>
+                <Form.Control
+                  value={f.occupation}
+                  onChange={(e) => {
+                    text("occupation")(e);
+                    if (errors.salary) setError("salary", "");
+                  }}
+                  placeholder="Type None or leave it blank if you have no occupation"
+                />
+              </Col>
+              <Col xs={12} md={6}>
+                <Label required={hasOccupation(f.occupation)}>
+                  Monthly Salary
+                </Label>
+                <Form.Control
+                  inputMode="numeric"
+                  value={f.salary}
+                  onChange={digits("salary", 9)}
+                  onBlur={blur("salary")}
+                  isInvalid={!!errors.salary}
+                />
+                <Err msg={errors.salary} />
+                {!errors.salary && hasOccupation(f.occupation) && (
+                  <div className="field-hint">
+                    Required because you entered an occupation.
+                  </div>
+                )}
+              </Col>
               <Col xs={12} md={6}>
                 <Label required>Contact Number</Label>
                 <Form.Control
@@ -593,48 +599,63 @@ if (done)
         </Form>
       </div>
 
-      <DataPrivacyModal show={step === "privacy"} onAccept={() => setStep("instructions")} />
-<InstructionModal show={step === "instructions"} onAccept={() => setStep("form")} />
+      <DataPrivacyModal
+        show={step === "privacy"}
+        onAccept={() => setStep("instructions")}
+      />
+      <InstructionModal
+        show={step === "instructions"}
+        onAccept={() => setStep("form")}
+      />
 
-<ReviewModal
-  show={showReview}
-  onHide={() => setShowReview(false)}
-  data={reviewData}
-  onConfirm={() => { setShowReview(false); setShowConfirm(true); }}
-/>
+      <ReviewModal
+        show={showReview}
+        onHide={() => setShowReview(false)}
+        data={reviewData}
+        onConfirm={() => {
+          setShowReview(false);
+          setShowConfirm(true);
+        }}
+      />
 
-<ConfirmationModal
-  show={showConfirm}
-  onHide={() => { setShowConfirm(false); setShowReview(true); }}
-  onConfirm={submit}
-  title="Submit Form"
-  message="Are you sure you want to submit this form?"
-  subMessage="You will no longer be able to edit the information after submission."
-  confirmText="Submit"
-/>
+      <ConfirmationModal
+        show={showConfirm}
+        onHide={() => {
+          setShowConfirm(false);
+          setShowReview(true);
+        }}
+        onConfirm={submit}
+        title="Submit Form"
+        message="Are you sure you want to submit this form?"
+        subMessage="You will no longer be able to edit the information after submission."
+        confirmText="Submit"
+      />
 
-<ConfirmationModal
-  show={showResetModal}
-  onHide={() => setShowResetModal(false)}
-  onConfirm={() => { reset(); setShowResetModal(false); }}
-  title="Reset Form"
-  message="Are you sure you want to reset the form?"
-  subMessage="All changes will be lost."
-  confirmText="Yes, Reset"
-  confirmVariant="danger"
-/>
+      <ConfirmationModal
+        show={showResetModal}
+        onHide={() => setShowResetModal(false)}
+        onConfirm={() => {
+          reset();
+          setShowResetModal(false);
+        }}
+        title="Reset Form"
+        message="Are you sure you want to reset the form?"
+        subMessage="All changes will be lost."
+        confirmText="Yes, Reset"
+        confirmVariant="danger"
+      />
 
-<ConfirmationModal
-  show={showLeave}
-  onHide={() => setShowLeave(false)}
-  onConfirm={leavePage}
-  title="Leave Page"
-  message="Are you sure you want to leave?"
-  subMessage="Changes will not be saved. Your form will be lost."
-  confirmText="Leave"
-  cancelText="Stay"
-  confirmVariant="danger"
-/>
+      <ConfirmationModal
+        show={showLeave}
+        onHide={() => setShowLeave(false)}
+        onConfirm={leavePage}
+        title="Leave Page"
+        message="Are you sure you want to leave?"
+        subMessage="Changes will not be saved. Your form will be lost."
+        confirmText="Leave"
+        cancelText="Stay"
+        confirmVariant="danger"
+      />
     </div>
   );
 }
