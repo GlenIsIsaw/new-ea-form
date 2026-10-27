@@ -7,26 +7,18 @@ import { MUNICIPALITIES, BARANGAYS } from "./data/locations";
 import ReviewModal from "./components/ReviewModal";
 import SuccessPage from "./components/SucessPageWrapper";
 import { SCHOOL_GROUPS, OUTSIDE_CN } from "./data/school";
+import { MONTHS, EXTENSIONS, SEX, CIVIL, daysIn } from "./data/options";
+import {
+  MAX_FAMILY,
+  emptyMember,
+  validateMember,
+  validateMemberField,
+} from "./data/family";
+import FamilyMemberCard from "./components/FamilyMemberCard";
 
-const MONTHS = [
-  "JANUARY",
-  "FEBRUARY",
-  "MARCH",
-  "APRIL",
-  "MAY",
-  "JUNE",
-  "JULY",
-  "AUGUST",
-  "SEPTEMBER",
-  "OCTOBER",
-  "NOVEMBER",
-  "DECEMBER",
-];
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbwExKKvNSHlXbozucQf0kJJ9h_ZEiLjTkE6mZwN8781ssJxGVbVv6LtkBFzSPtF6gSoAA/exec";
-const EXTENSIONS = ["JR.", "SR.", "II", "III", "IV", "V"];
-const SEX = ["MALE", "FEMALE"];
-const CIVIL = ["SINGLE", "MARRIED", "SEPARATED", "WIDOW/WIDOWER", "COMMON-LAW"];
+  "https://script.google.com/macros/s/AKfycbzadFEokIBEiBYi8Ykiy1VGnsnIHcYBPl9cNfk6tBUUkIDSzxIxGA6b8zAN6HNdgntaxQ/exec";
+
 const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
@@ -41,8 +33,6 @@ const YEAR_LEVELS = [
 const NAME_RE = /^[A-Za-zÀ-ÿñÑ]+(?:[ '-][A-Za-zÀ-ÿñÑ]+)*$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const SCHOOL_RE = /^[A-Za-zÀ-ÿñÑ0-9 .,'’&()/-]{3,150}$/;
-
-const daysIn = (m, y) => (m ? new Date(y || 2024, Number(m), 0).getDate() : 31);
 
 const hasOccupation = (v) =>
   !!v.trim() && !/^(none|n\/?a|na|nil|-+|not applicable)$/i.test(v.trim());
@@ -105,15 +95,15 @@ const validators = {
       : !EMAIL_RE.test(v.trim())
         ? "Enter a valid email address."
         : "",
-        school: (v) => (v ? "" : "Please select your school."),
-otherSchool: (v, f) =>
-  f.school !== OUTSIDE_CN
-    ? ""
-    : !v.trim()
-      ? "Please type the name of your school/university."
-      : !SCHOOL_RE.test(v.trim())
-        ? "Use letters, numbers and basic punctuation only."
-        : "",
+  school: (v) => (v ? "" : "Please select your school."),
+  otherSchool: (v, f) =>
+    f.school !== OUTSIDE_CN
+      ? ""
+      : !v.trim()
+        ? "Please type the name of your school/university."
+        : !SCHOOL_RE.test(v.trim())
+          ? "Use letters, numbers and basic punctuation only."
+          : "",
   municipality: (v) => (v ? "" : "Please select your municipality."),
   barangay: (v) => (v ? "" : "Please select your barangay."),
   yearLevel: (v) => (v ? "" : "Please select your year level."),
@@ -127,8 +117,8 @@ const INITIAL = {
   sex: "",
   civilStatus: "",
   yearLevel: "",
-school: "",
-otherSchool: "",
+  school: "",
+  otherSchool: "",
   bMonth: "",
   bDay: "",
   bYear: "",
@@ -159,16 +149,26 @@ export default function App() {
   const [f, setF] = useState(INITIAL);
   const [errors, setErrors] = useState({});
   const [done, setDone] = useState(false);
-  const [step, setStep] = useState("privacy"); // privacy -> instructions -> form
+  const [step, setStep] = useState("privacy");
   const [submitting, setSubmitting] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [reviewData, setReviewData] = useState({});
   const [showLeave, setShowLeave] = useState(false);
+
+  // family states: these must come BEFORE isDirty
+  const [family, setFamily] = useState([emptyMember()]);
+  const [familyErrors, setFamilyErrors] = useState([{}]);
+  const [removeIndex, setRemoveIndex] = useState(null);
+
   const leavingRef = useRef(false);
   const guardedRef = useRef(false);
-  const isDirty = JSON.stringify(f) !== JSON.stringify(INITIAL);
+
+  // now it's safe to use `family`
+  const isDirty =
+    JSON.stringify(f) !== JSON.stringify(INITIAL) ||
+    JSON.stringify(family) !== JSON.stringify([emptyMember()]);
 
   const check = (name, next = f) => validators[name]?.(next[name], next) ?? "";
   const setError = (name, msg) => setErrors((p) => ({ ...p, [name]: msg }));
@@ -204,6 +204,65 @@ export default function App() {
     setError("birthday", "");
   };
 
+  const RELATED = {
+    bMonth: "birthday",
+    bDay: "birthday",
+    bYear: "birthday",
+    occupation: "salary",
+  };
+
+  const addMember = () => {
+    if (family.length >= MAX_FAMILY) return;
+    const newIndex = family.length;
+    setFamily((p) => [...p, emptyMember()]);
+    setFamilyErrors((p) => [...p, {}]);
+    setTimeout(
+      () =>
+        document
+          .getElementById(`family-${newIndex}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50,
+    );
+  };
+
+  const updateMember = (i, name, value) => {
+    setFamily((p) =>
+      p.map((m, idx) => {
+        if (idx !== i) return m;
+        const next = { ...m, [name]: value };
+        if (
+          (name === "bMonth" || name === "bYear") &&
+          Number(next.bDay) > daysIn(next.bMonth, next.bYear)
+        )
+          next.bDay = "";
+        return next;
+      }),
+    );
+    const cleared = Object.fromEntries(
+      [name, RELATED[name]].filter(Boolean).map((k) => [k, ""]),
+    );
+    setFamilyErrors((p) =>
+      p.map((e, idx) => (idx === i ? { ...e, ...cleared } : e)),
+    );
+  };
+
+  const blurMember = (i, name) =>
+    setFamilyErrors((p) =>
+      p.map((e, idx) =>
+        idx === i ? { ...e, [name]: validateMemberField(name, family[i]) } : e,
+      ),
+    );
+
+  const doRemove = (i) => {
+    setFamily((p) => p.filter((_, idx) => idx !== i));
+    setFamilyErrors((p) => p.filter((_, idx) => idx !== i));
+    setRemoveIndex(null);
+  };
+  const askRemove = (i) =>
+    JSON.stringify(family[i]) === JSON.stringify(emptyMember())
+      ? doRemove(i)
+      : setRemoveIndex(i);
+
   const review = (e) => {
     e.preventDefault();
     const found = {};
@@ -212,7 +271,10 @@ export default function App() {
       if (m) found[k] = m;
     });
     setErrors(found);
-    if (Object.keys(found).length) {
+    const famErrs = family.map((m) => validateMember(m));
+    setFamilyErrors(famErrs);
+    const famInvalid = famErrs.some((e) => Object.keys(e).length);
+    if (Object.keys(found).length || famInvalid) {
       setTimeout(() => {
         document
           .querySelector(".is-invalid, .d-block.invalid-feedback")
@@ -233,6 +295,23 @@ export default function App() {
     setShowConfirm(false);
     setSubmitting(true);
     try {
+      // ① NEW: build the family list (goes ABOVE `const body`)
+      const familyPayload = family.map((m) => ({
+        relationship: m.relationship,
+        lastName: m.lastName.trim(),
+        firstName: m.firstName.trim(),
+        middleName: m.middleName.trim(),
+        extension: m.extension,
+        sex: m.sex,
+        civilStatus: m.civilStatus,
+        bMonth: MONTHS[m.bMonth - 1],
+        bDay: m.bDay,
+        bYear: m.bYear,
+        contact: m.contact,
+        occupation: m.occupation.trim(),
+        salary: m.salary,
+      }));
+
       const body = new URLSearchParams({
         municipality: f.municipality,
         barangay: f.barangay,
@@ -253,7 +332,9 @@ export default function App() {
         salary: f.salary,
         philsys: f.philsys,
         email: f.email.trim(),
+        family: JSON.stringify(familyPayload), // ② NEW: add this line at the end of the list
       });
+
       const res = await fetch(API_URL, { method: "POST", body });
       const result = await res.json();
       if (result.success) setDone(true);
@@ -270,6 +351,8 @@ export default function App() {
     setF(INITIAL);
     setErrors({});
     setDone(false);
+    setFamily([emptyMember()]);
+    setFamilyErrors([{}]);
   };
 
   useEffect(() => {
@@ -336,6 +419,8 @@ export default function App() {
         onNewSubmission={() => {
           setF(INITIAL);
           setErrors({});
+          setFamily([emptyMember()]);
+          setFamilyErrors([{}]);
         }}
       />
     );
@@ -472,61 +557,65 @@ export default function App() {
                 <Err msg={errors.civilStatus} />
               </Col>
 
-             <Row className="g-3 mt-0">
-  <Col xs={12} md={8}>
-    <Label required>School / University</Label>
-    <Form.Select
-      value={f.school}
-      onChange={text("school")}
-      onBlur={blur("school")}
-      isInvalid={!!errors.school}
-    >
-      <option value="">Select School / University</option>
-      {SCHOOL_GROUPS.map((g) => (
-        <optgroup key={g.label} label={g.label}>
-          {g.options.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </optgroup>
-      ))}
-      <option value={OUTSIDE_CN}>{OUTSIDE_CN}</option>
-    </Form.Select>
-    <Err msg={errors.school} />
-  </Col>
+              <Row className="g-3 mt-0">
+                <Col xs={12} md={8}>
+                  <Label required>School / University</Label>
+                  <Form.Select
+                    value={f.school}
+                    onChange={text("school")}
+                    onBlur={blur("school")}
+                    isInvalid={!!errors.school}
+                  >
+                    <option value="">Select School / University</option>
+                    {SCHOOL_GROUPS.map((g) => (
+                      <optgroup key={g.label} label={g.label}>
+                        {g.options.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    <option value={OUTSIDE_CN}>{OUTSIDE_CN}</option>
+                  </Form.Select>
+                  <Err msg={errors.school} />
+                </Col>
 
-  <Col xs={12} md={4}>
-    <Label required>Year Level</Label>
-    <Form.Select
-      value={f.yearLevel}
-      onChange={text("yearLevel")}
-      onBlur={blur("yearLevel")}
-      isInvalid={!!errors.yearLevel}
-    >
-      <option value="">Select Year Level</option>
-      {YEAR_LEVELS.map((x) => (
-        <option key={x} value={x}>{x}</option>
-      ))}
-    </Form.Select>
-    <Err msg={errors.yearLevel} />
-  </Col>
+                <Col xs={12} md={4}>
+                  <Label required>Year Level</Label>
+                  <Form.Select
+                    value={f.yearLevel}
+                    onChange={text("yearLevel")}
+                    onBlur={blur("yearLevel")}
+                    isInvalid={!!errors.yearLevel}
+                  >
+                    <option value="">Select Year Level</option>
+                    {YEAR_LEVELS.map((x) => (
+                      <option key={x} value={x}>
+                        {x}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Err msg={errors.yearLevel} />
+                </Col>
 
-  {f.school === OUTSIDE_CN && (
-    <Col xs={12}>
-      <Label required>Name of School / University</Label>
-      <Form.Control
-        value={f.otherSchool}
-        onChange={(e) => {
-          update("otherSchool", e.target.value.toUpperCase());
-          if (errors.otherSchool) setError("otherSchool", "");
-        }}
-        onBlur={blur("otherSchool")}
-        isInvalid={!!errors.otherSchool}
-        placeholder="Type the full name of your school/university"
-      />
-      <Err msg={errors.otherSchool} />
-    </Col>
-  )}
-</Row>
+                {f.school === OUTSIDE_CN && (
+                  <Col xs={12}>
+                    <Label required>Name of School / University</Label>
+                    <Form.Control
+                      value={f.otherSchool}
+                      onChange={(e) => {
+                        update("otherSchool", e.target.value.toUpperCase());
+                        if (errors.otherSchool) setError("otherSchool", "");
+                      }}
+                      onBlur={blur("otherSchool")}
+                      isInvalid={!!errors.otherSchool}
+                      placeholder="Type the full name of your school/university"
+                    />
+                    <Err msg={errors.otherSchool} />
+                  </Col>
+                )}
+              </Row>
 
               <Col xs={12}>
                 <Label required>Birthday</Label>
@@ -714,6 +803,46 @@ export default function App() {
             </Row>
           </section>
 
+          <section className="mb-4">
+            <div className="section-title">Family Members</div>
+            <p className="family-help">
+              <span>Add at least 1 and up to {MAX_FAMILY} family members.</span>
+              <span className="family-count">
+                {family.length} of {MAX_FAMILY} added
+              </span>
+            </p>
+
+            {family.map((m, i) => (
+              <FamilyMemberCard
+                key={i}
+                index={i}
+                member={m}
+                errors={familyErrors[i]}
+                onChange={(name, value) => updateMember(i, name, value)}
+                onBlurField={(name) => blurMember(i, name)}
+                onRemove={() => askRemove(i)}
+                canRemove={family.length > 1}
+              />
+            ))}
+
+            <div className="family-add-row">
+              <Button
+                type="button"
+                variant="outline-secondary"
+                className="family-add-btn"
+                onClick={addMember}
+                disabled={family.length >= MAX_FAMILY}
+              >
+                + Add Another Family Member
+              </Button>
+              {family.length >= MAX_FAMILY && (
+                <span className="field-hint">
+                  Maximum of {MAX_FAMILY} family members reached.
+                </span>
+              )}
+            </div>
+          </section>
+
           <div className="submit-row d-flex justify-content-end gap-2">
             <Button
               variant="outline-secondary"
@@ -743,6 +872,7 @@ export default function App() {
         show={showReview}
         onHide={() => setShowReview(false)}
         data={reviewData}
+        family={family}
         onConfirm={() => {
           setShowReview(false);
           setShowConfirm(true);
@@ -785,6 +915,17 @@ export default function App() {
         subMessage="Changes will not be saved. Your form will be lost."
         confirmText="Leave"
         cancelText="Stay"
+        confirmVariant="danger"
+      />
+
+      <ConfirmationModal
+        show={removeIndex !== null}
+        onHide={() => setRemoveIndex(null)}
+        onConfirm={() => doRemove(removeIndex)}
+        title="Remove Family Member"
+        message={`Remove Family Member ${(removeIndex ?? 0) + 1}?`}
+        subMessage="The information you entered for this person will be deleted."
+        confirmText="Yes, Remove"
         confirmVariant="danger"
       />
     </div>

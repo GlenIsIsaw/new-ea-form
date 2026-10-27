@@ -1,7 +1,9 @@
 import { Modal, Button, Row, Col, Form } from "react-bootstrap";
 import { useState, useEffect } from "react";
+import { MONTHS } from "../data/options";
 
-const show_ = (value) => (value && String(value).trim() ? String(value).trim() : "-");
+const show_ = (value) =>
+  value && String(value).trim() ? String(value).trim() : "-";
 
 function InfoRow({ label, value }) {
   return (
@@ -21,7 +23,13 @@ function SectionHeader({ title }) {
 }
 
 // `data` is the review object built in App.jsx (birthday and salary already formatted)
-export default function ReviewModal({ show, onHide, data, onConfirm }) {
+export default function ReviewModal({
+  show,
+  onHide,
+  data,
+  onConfirm,
+  family = [],
+}) {
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
@@ -31,7 +39,9 @@ export default function ReviewModal({ show, onHide, data, onConfirm }) {
   return (
     <Modal show={show} onHide={onHide} size="lg" scrollable centered>
       <Modal.Header closeButton className="review-modal-header">
-        <Modal.Title className="review-modal-title">Review Your Information</Modal.Title>
+        <Modal.Title className="review-modal-title">
+          Review Your Information
+        </Modal.Title>
       </Modal.Header>
 
       <Modal.Body className="review-modal-body">
@@ -67,10 +77,39 @@ export default function ReviewModal({ show, onHide, data, onConfirm }) {
           <InfoRow label="Barangay" value={data.barangay} />
           <InfoRow label="Purok / Street" value={data.street} />
         </div>
+
+        {family.map((m, i) => (
+          <div key={i}>
+            <SectionHeader title={`Family Member ${i + 1}`} />
+            <div className="review-section-body">
+              <InfoRow label="Relationship" value={m.relationship} />
+              <InfoRow label="Last Name" value={m.lastName} />
+              <InfoRow label="First Name" value={m.firstName} />
+              <InfoRow label="Middle Name" value={m.middleName} />
+              <InfoRow label="Extension" value={m.extension} />
+              <InfoRow label="Gender" value={m.sex} />
+              <InfoRow label="Civil Status" value={m.civilStatus} />
+              <InfoRow
+                label="Birthday"
+                value={`${MONTHS[m.bMonth - 1]} ${m.bDay}, ${m.bYear}`}
+              />
+              <InfoRow label="Contact Number" value={m.contact} />
+              <InfoRow label="Occupation" value={m.occupation} />
+              <InfoRow
+                label="Monthly Salary"
+                value={
+                  m.salary ? `₱${Number(m.salary).toLocaleString("en-PH")}` : ""
+                }
+              />
+            </div>
+          </div>
+        ))}
       </Modal.Body>
 
       {/* Acknowledgement: outside the scrollable body, anchored above the footer */}
-      <div className={`review-acknowledgement ${agreed ? "review-ack-done" : "review-ack-pending"}`}>
+      <div
+        className={`review-acknowledgement ${agreed ? "review-ack-done" : "review-ack-pending"}`}
+      >
         <label htmlFor="confirmInformation" className="review-ack-inner">
           <Form.Check
             id="confirmInformation"
@@ -79,15 +118,20 @@ export default function ReviewModal({ show, onHide, data, onConfirm }) {
             className="review-ack-check"
           />
           <span className="review-ack-text">
-            I confirm that the information above is true and correct. I consent to the use of my personal data
-            solely for the TDP Application and acknowledge that I am responsible for the accuracy of the
+            I confirm that the information above is true and correct. I consent
+            to the use of my personal data solely for the TDP Application and
+            acknowledge that I am responsible for the accuracy of the
             information I submitted.
           </span>
         </label>
       </div>
 
       <Modal.Footer className="review-modal-footer">
-        <Button variant="outline-secondary" className="btn-go-back" onClick={onHide}>
+        <Button
+          variant="outline-secondary"
+          className="btn-go-back"
+          onClick={onHide}
+        >
           Go Back
         </Button>
         <Button
