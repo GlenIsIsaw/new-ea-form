@@ -47,6 +47,8 @@ export default function ReviewModal({ show, onHide, data, onConfirm }) {
         <div className="review-section-body">
           <InfoRow label="Sex" value={data.sex} />
           <InfoRow label="Civil Status" value={data.civilStatus} />
+          <InfoRow label="School / University" value={data.school} />
+          <InfoRow label="Year Level" value={data.yearLevel} />
           <InfoRow label="Birthday" value={data.birthday} />
         </div>
 

@@ -6,6 +6,7 @@ import ConfirmationModal from "./components/ConfirmationModal";
 import { MUNICIPALITIES, BARANGAYS } from "./data/locations";
 import ReviewModal from "./components/ReviewModal";
 import SuccessPage from "./components/SucessPageWrapper";
+import { SCHOOL_GROUPS, OUTSIDE_CN } from "./data/school";
 
 const MONTHS = [
   "JANUARY",
@@ -21,15 +22,25 @@ const MONTHS = [
   "NOVEMBER",
   "DECEMBER",
 ];
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbwExKKvNSHlXbozucQf0kJJ9h_ZEiLjTkE6mZwN8781ssJxGVbVv6LtkBFzSPtF6gSoAA/exec";
 const EXTENSIONS = ["JR.", "SR.", "II", "III", "IV", "V"];
 const SEX = ["MALE", "FEMALE"];
 const CIVIL = ["SINGLE", "MARRIED", "SEPARATED", "WIDOW/WIDOWER", "COMMON-LAW"];
 const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
+const YEAR_LEVELS = [
+  "1ST YEAR",
+  "2ND YEAR",
+  "3RD YEAR",
+  "4TH YEAR",
+  "5TH YEAR",
+];
 
 const NAME_RE = /^[A-Za-zÀ-ÿñÑ]+(?:[ '-][A-Za-zÀ-ÿñÑ]+)*$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const SCHOOL_RE = /^[A-Za-zÀ-ÿñÑ0-9 .,'’&()/-]{3,150}$/;
 
 const daysIn = (m, y) => (m ? new Date(y || 2024, Number(m), 0).getDate() : 31);
 
@@ -94,8 +105,18 @@ const validators = {
       : !EMAIL_RE.test(v.trim())
         ? "Enter a valid email address."
         : "",
+        school: (v) => (v ? "" : "Please select your school."),
+otherSchool: (v, f) =>
+  f.school !== OUTSIDE_CN
+    ? ""
+    : !v.trim()
+      ? "Please type the name of your school/university."
+      : !SCHOOL_RE.test(v.trim())
+        ? "Use letters, numbers and basic punctuation only."
+        : "",
   municipality: (v) => (v ? "" : "Please select your municipality."),
   barangay: (v) => (v ? "" : "Please select your barangay."),
+  yearLevel: (v) => (v ? "" : "Please select your year level."),
 };
 
 const INITIAL = {
@@ -105,6 +126,9 @@ const INITIAL = {
   extension: "",
   sex: "",
   civilStatus: "",
+  yearLevel: "",
+school: "",
+otherSchool: "",
   bMonth: "",
   bDay: "",
   bYear: "",
@@ -136,6 +160,7 @@ export default function App() {
   const [errors, setErrors] = useState({});
   const [done, setDone] = useState(false);
   const [step, setStep] = useState("privacy"); // privacy -> instructions -> form
+  const [submitting, setSubmitting] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -152,6 +177,7 @@ export default function App() {
     setF((p) => {
       const next = { ...p, [name]: value };
       if (name === "municipality") next.barangay = "";
+      if (name === "school" && value !== OUTSIDE_CN) next.otherSchool = "";
       if (name === "bMonth" || name === "bYear") {
         if (Number(next.bDay) > daysIn(next.bMonth, next.bYear)) next.bDay = "";
       }
@@ -160,7 +186,7 @@ export default function App() {
   };
 
   const nameText = (name) => (e) => {
-    update(name, e.target.value.normalize("NFC"));
+    update(name, e.target.value.normalize("NFC").toUpperCase());
     if (errors[name]) setError(name, "");
   };
 
@@ -196,16 +222,48 @@ export default function App() {
     }
     setReviewData({
       ...f,
+      school: f.school === OUTSIDE_CN ? f.otherSchool.trim() : f.school,
       birthday: `${MONTHS[f.bMonth - 1]} ${f.bDay}, ${f.bYear}`,
       salary: f.salary ? `₱${Number(f.salary).toLocaleString("en-PH")}` : "",
     });
     setShowReview(true);
   };
 
-  const submit = () => {
+  const submit = async () => {
     setShowConfirm(false);
-    // TODO: send `f` to the Google Apps Script web app
-    setDone(true);
+    setSubmitting(true);
+    try {
+      const body = new URLSearchParams({
+        municipality: f.municipality,
+        barangay: f.barangay,
+        street: f.street.trim(),
+        lastName: f.lastName.trim(),
+        firstName: f.firstName.trim(),
+        middleName: f.middleName.trim(),
+        extension: f.extension,
+        sex: f.sex,
+        civilStatus: f.civilStatus,
+        yearLevel: f.yearLevel,
+        school: f.school === OUTSIDE_CN ? f.otherSchool.trim() : f.school,
+        bMonth: MONTHS[f.bMonth - 1],
+        bDay: f.bDay,
+        bYear: f.bYear,
+        contact: f.contact,
+        occupation: f.occupation.trim(),
+        salary: f.salary,
+        philsys: f.philsys,
+        email: f.email.trim(),
+      });
+      const res = await fetch(API_URL, { method: "POST", body });
+      const result = await res.json();
+      if (result.success) setDone(true);
+      else alert(result.error || "Submission failed. Please try again.");
+    } catch (err) {
+      console.error(err);
+      alert("Unable to connect. Please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const reset = () => {
@@ -251,6 +309,26 @@ export default function App() {
       leavingRef.current = false;
     }, 1500); // if there was nowhere to go back to
   };
+
+  if (submitting)
+    return (
+      <div
+        className="d-flex flex-column justify-content-center align-items-center text-center px-3"
+        style={{ height: "100vh" }}
+      >
+        <div
+          className="spinner-border mb-3"
+          role="status"
+          style={{ color: "#1a5c38" }}
+        />
+        <h4 style={{ color: "#1a5c38", fontWeight: 700 }}>
+          Submitting your information...
+        </h4>
+        <p className="text-muted">
+          Please wait. <strong>DO NOT CLOSE THIS WINDOW.</strong>
+        </p>
+      </div>
+    );
 
   if (done)
     return (
@@ -342,11 +420,7 @@ export default function App() {
                   autoComplete="additional-name"
                 />
                 <Err msg={errors.middleName} />
-                {!errors.middleName && (
-                  <div className="field-hint">
-                    
-                  </div>
-                )}
+                {!errors.middleName && <div className="field-hint"></div>}
               </Col>
               <Col xs={12} md={6} lg={3}>
                 <Label>Extension Name</Label>
@@ -363,14 +437,14 @@ export default function App() {
             <div className="section-title my-4">Personal Information</div>
             <Row className="g-3">
               <Col xs={12} md={6}>
-                <Label required>Sex</Label>
+                <Label required>Gender</Label>
                 <Form.Select
                   value={f.sex}
                   onChange={text("sex")}
                   onBlur={blur("sex")}
                   isInvalid={!!errors.sex}
                 >
-                  <option value="">Select sex</option>
+                  <option value="">Select Gender</option>
                   {SEX.map((x) => (
                     <option key={x} value={x}>
                       {x}
@@ -379,6 +453,7 @@ export default function App() {
                 </Form.Select>
                 <Err msg={errors.sex} />
               </Col>
+
               <Col xs={12} md={6}>
                 <Label required>Civil Status</Label>
                 <Form.Select
@@ -387,7 +462,7 @@ export default function App() {
                   onBlur={blur("civilStatus")}
                   isInvalid={!!errors.civilStatus}
                 >
-                  <option value="">Select civil status</option>
+                  <option value="">Select Civil Status</option>
                   {CIVIL.map((x) => (
                     <option key={x} value={x}>
                       {x}
@@ -396,6 +471,62 @@ export default function App() {
                 </Form.Select>
                 <Err msg={errors.civilStatus} />
               </Col>
+
+             <Row className="g-3 mt-0">
+  <Col xs={12} md={8}>
+    <Label required>School / University</Label>
+    <Form.Select
+      value={f.school}
+      onChange={text("school")}
+      onBlur={blur("school")}
+      isInvalid={!!errors.school}
+    >
+      <option value="">Select School / University</option>
+      {SCHOOL_GROUPS.map((g) => (
+        <optgroup key={g.label} label={g.label}>
+          {g.options.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </optgroup>
+      ))}
+      <option value={OUTSIDE_CN}>{OUTSIDE_CN}</option>
+    </Form.Select>
+    <Err msg={errors.school} />
+  </Col>
+
+  <Col xs={12} md={4}>
+    <Label required>Year Level</Label>
+    <Form.Select
+      value={f.yearLevel}
+      onChange={text("yearLevel")}
+      onBlur={blur("yearLevel")}
+      isInvalid={!!errors.yearLevel}
+    >
+      <option value="">Select Year Level</option>
+      {YEAR_LEVELS.map((x) => (
+        <option key={x} value={x}>{x}</option>
+      ))}
+    </Form.Select>
+    <Err msg={errors.yearLevel} />
+  </Col>
+
+  {f.school === OUTSIDE_CN && (
+    <Col xs={12}>
+      <Label required>Name of School / University</Label>
+      <Form.Control
+        value={f.otherSchool}
+        onChange={(e) => {
+          update("otherSchool", e.target.value.toUpperCase());
+          if (errors.otherSchool) setError("otherSchool", "");
+        }}
+        onBlur={blur("otherSchool")}
+        isInvalid={!!errors.otherSchool}
+        placeholder="Type the full name of your school/university"
+      />
+      <Err msg={errors.otherSchool} />
+    </Col>
+  )}
+</Row>
 
               <Col xs={12}>
                 <Label required>Birthday</Label>
@@ -475,7 +606,7 @@ export default function App() {
                 <Form.Control
                   value={f.occupation}
                   onChange={(e) => {
-                    text("occupation")(e);
+                    update("occupation", e.target.value.toUpperCase());
                     if (errors.salary) setError("salary", "");
                   }}
                   placeholder="Type None or leave it blank if you have no occupation"
@@ -588,7 +719,7 @@ export default function App() {
               variant="outline-secondary"
               type="button"
               className="px-4"
-              onClick={reset}
+              onClick={() => setShowResetModal(true)}
             >
               Reset
             </Button>
