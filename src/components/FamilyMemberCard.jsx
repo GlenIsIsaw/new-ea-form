@@ -1,6 +1,7 @@
 import { Row, Col, Form } from "react-bootstrap";
 import { MONTHS, EXTENSIONS, SEX, CIVIL, daysIn } from "../data/options";
 import { RELATIONSHIPS, FAMILY_YEARS, hasOccupation } from "../data/family";
+import { MUNICIPALITIES, BARANGAYS } from "../data/locations";
 
 const Err = ({ msg }) =>
   msg ? (
@@ -24,6 +25,7 @@ export default function FamilyMemberCard({
   onChange,
   onBlurField,
   onRemove,
+  onSameAddress,
   canRemove,
 }) {
   const hasErrors = Object.values(errors).some(Boolean);
@@ -243,7 +245,7 @@ export default function FamilyMemberCard({
               onChange={(e) =>
                 onChange("occupation", e.target.value.toUpperCase())
               }
-              placeholder="Type None or leave it blank if you have no occupation"
+              placeholder="Type None if no occupation"
             />
           </Col>
           <Col xs={12} md={4}>
@@ -259,9 +261,79 @@ export default function FamilyMemberCard({
               onChange={digits("salary", 9)}
               onBlur={blur("salary")}
               isInvalid={!!errors.salary}
-              placeholder=""
+              placeholder="Numbers only"
             />
             <Err msg={errors.salary} />
+          </Col>
+        </Row>
+
+        <div className="family-sub">Address</div>
+        <Form.Check
+          type="checkbox"
+          id={`same-address-${index}`}
+          className="family-same"
+          checked={!!m.sameAddress}
+          onChange={(e) => onSameAddress(e.target.checked)}
+          label="Same address as the student"
+        />
+        {m.sameAddress && (
+          <div className="field-hint family-same-hint">
+            Using the student's address from above. It updates automatically if
+            the student's address changes.
+          </div>
+        )}
+        <Row className="g-3 mt-2">
+          <Col xs={12} md={6}>
+            <Label required={!m.sameAddress}>Municipality</Label>
+            <Form.Select
+              value={m.municipality}
+              onChange={set("municipality")}
+              onBlur={blur("municipality")}
+              disabled={!!m.sameAddress}
+              isInvalid={!!errors.municipality}
+            >
+              <option value="">
+                {m.sameAddress
+                  ? "Fill in the student's address above"
+                  : "Select municipality"}
+              </option>
+              {MUNICIPALITIES.map((x) => (
+                <option key={x} value={x}>
+                  {x}
+                </option>
+              ))}
+            </Form.Select>
+            <Err msg={errors.municipality} />
+          </Col>
+          <Col xs={12} md={6}>
+            <Label required={!m.sameAddress}>Barangay</Label>
+            <Form.Select
+              value={m.barangay}
+              onChange={set("barangay")}
+              onBlur={blur("barangay")}
+              disabled={!!m.sameAddress || !m.municipality}
+              isInvalid={!!errors.barangay}
+            >
+              <option value="">
+                {m.municipality
+                  ? "Select barangay"
+                  : "Select municipality first"}
+              </option>
+              {(BARANGAYS[m.municipality] || []).map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </Form.Select>
+            <Err msg={errors.barangay} />
+          </Col>
+          <Col xs={12}>
+            <Label optional>Street / Purok</Label>
+            <Form.Control
+              value={m.street}
+              onChange={set("street")}
+              disabled={!!m.sameAddress}
+            />
           </Col>
         </Row>
       </div>

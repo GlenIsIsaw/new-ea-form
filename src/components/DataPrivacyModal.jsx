@@ -71,7 +71,7 @@ export default function DataPrivacyModal({ show, onAccept }) {
           <p>
             The 2nd Legislative District of Camarines Norte collects your
             personal information solely for the administration of the{" "}
-            <strong>Tulong Dunong Program (TDP)</strong> scholarship. Your data
+            <strong>Educational Assistance</strong>. Your data
             will not be used for any other purpose without your explicit
             consent.
           </p>
@@ -90,8 +90,8 @@ export default function DataPrivacyModal({ show, onAccept }) {
         <div className="consent-section">
           <h6 className="consent-section-heading">How Your Data Is Used</h6>
           <ul className="consent-list">
-            <li>To verify your eligibility for the TDP scholarship</li>
-            <li>To process and record your scholarship application</li>
+            <li>To verify your eligibility for the Educational Assistance</li>
+            <li>To process and record your Educational Assistance application</li>
             <li>To communicate with you regarding your application status</li>
             <li>To comply with government reporting requirements</li>
           </ul>

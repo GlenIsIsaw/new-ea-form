@@ -48,6 +48,10 @@ export const emptyMember = () => ({
   contact: "",
   occupation: "",
   salary: "",
+  sameAddress: true,
+  municipality: "",
+  barangay: "",
+  street: "",
 });
 
 const NAME_RE = /^[A-Za-zÀ-ÿñÑ]+(?:[ '’-][A-Za-zÀ-ÿñÑ]+)*$/;
@@ -93,6 +97,10 @@ const memberValidators = {
     !v || /^09\d{9}$/.test(v)
       ? ""
       : "Enter an 11-digit number starting with 09.", // optional
+  // Address is only checked when it is NOT "same as student" (the student's own address is checked in the main form)
+  municipality: (v, m) =>
+    m.sameAddress || v ? "" : "Please select the municipality.",
+  barangay: (v, m) => (m.sameAddress || v ? "" : "Please select the barangay."),
   salary: (v, m) =>
     !hasOccupation(m.occupation)
       ? ""

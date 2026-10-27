@@ -612,127 +612,238 @@ body {
 
 /* Paste at the END of your index.css */
 .family-help {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0 0 1rem;
 }
 .family-count {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #1a5c38;
-  background: #e8f3ec;
-  border-radius: 999px;
-  padding: 0.15rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1a5c38;
+    background: #e8f3ec;
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
 }
 .family-card {
-  background: #fff;
-  border: 1px solid #d4e6da;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-  overflow: hidden;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    background: #fff;
+    border: 1px solid #d4e6da;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
 }
 .family-card:focus-within {
-  border-color: #1a5c38;
-  box-shadow: 0 0 0 3px rgba(26, 92, 56, 0.12);
+    border-color: #1a5c38;
+    box-shadow: 0 0 0 3px rgba(26, 92, 56, 0.12);
 }
 .family-card.has-error {
-  border-color: #dc3545;
+    border-color: #dc3545;
 }
 .family-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.7rem 1rem;
-  background: #f4faf6;
-  border-bottom: 1px solid #d4e6da;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    background: #f4faf6;
+    border-bottom: 1px solid #d4e6da;
 }
 .family-card-title {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #1a5c38;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a5c38;
 }
 .family-badge {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #1a5c38;
-  color: #fff;
-  font-size: 0.78rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1a5c38;
+    color: #fff;
+    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .family-remove {
-  border: 1px solid #f1c0c0;
-  background: #fff;
-  color: #b02a37;
-  font-size: 0.78rem;
-  font-weight: 600;
-  border-radius: 999px;
-  padding: 0.25rem 0.9rem;
-  cursor: pointer;
+    border: 1px solid #f1c0c0;
+    background: #fff;
+    color: #b02a37;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.25rem 0.9rem;
+    cursor: pointer;
 }
 .family-remove:hover {
-  background: #fdecea;
+    background: #fdecea;
 }
 .family-card-body {
-  padding: 1rem 1.1rem 1.2rem;
+    padding: 1rem 1.1rem 1.2rem;
 }
 .family-sub {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: #5a7363;
-  margin: 1.2rem 0 0.65rem;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px dashed #d4e6da;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #5a7363;
+    margin: 1.2rem 0 0.65rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px dashed #d4e6da;
 }
 .family-sub:first-child {
-  margin-top: 0;
+    margin-top: 0;
 }
 .family-optional {
-  font-weight: 400;
-  color: #8a9b91;
+    font-weight: 400;
+    color: #8a9b91;
 }
 .family-add-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 .family-add-btn {
-  border: 2px dashed #2d8653 !important;
-  color: #1a5c38 !important;
-  background: #fff !important;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.55rem 1.25rem;
+    border: 2px dashed #2d8653 !important;
+    color: #1a5c38 !important;
+    background: #fff !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.55rem 1.25rem;
 }
 .family-add-btn:hover:not(:disabled) {
-  background: #f4faf6 !important;
+    background: #f4faf6 !important;
 }
 .family-add-btn:disabled {
-  border-color: #c8ddd1 !important;
-  color: #8a9b91 !important;
+    border-color: #c8ddd1 !important;
+    color: #8a9b91 !important;
 }
 @media (max-width: 576px) {
-  .family-card-body {
-    padding: 0.85rem;
-  }
-  .family-add-btn {
-    width: 100%;
-  }
+    .family-card-body {
+        padding: 0.85rem;
+    }
+    .family-add-btn {
+        width: 100%;
+    }
+}
+
+/* ---- Added for family address ("same as student") ---- */
+.family-same {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1a5c38;
+}
+.family-same .form-check-input:checked {
+    background-color: #1a5c38;
+    border-color: #1a5c38;
+}
+.family-same-hint {
+    margin: 0.25rem 0 0 1.5rem;
+}
+
+/* Paste at the END of your index.css */
+.gate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.gate-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    text-align: left;
+    padding: 1.4rem 1.3rem;
+    background: #fff;
+    border: 1.5px solid #d4e6da;
+    border-radius: 14px;
+    cursor: pointer;
+    min-height: 190px;
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s,
+        transform 0.15s,
+        background 0.15s;
+}
+.gate-card:hover {
+    border-color: #1a5c38;
+    background: #f4faf6;
+    box-shadow: 0 6px 20px rgba(26, 92, 56, 0.14);
+    transform: translateY(-2px);
+}
+.gate-card:focus-visible {
+    outline: 3px solid rgba(26, 92, 56, 0.35);
+    outline-offset: 2px;
+    border-color: #1a5c38;
+}
+.gate-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: #e8f3ec;
+    color: #1a5c38;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.gate-icon svg {
+    width: 26px;
+    height: 26px;
+}
+.gate-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a5c38;
+    line-height: 1.35;
+}
+.gate-text {
+    font-size: 0.82rem;
+    color: #4b5563;
+    line-height: 1.55;
+}
+.gate-go {
+    margin-top: auto;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1a5c38;
+}
+@media (max-width: 767.98px) {
+    .gate-grid {
+        grid-template-columns: 1fr;
+    }
+    .gate-card {
+        min-height: 0;
+    }
+}
+
+/* category label inside the form header */
+.category-chip {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+}
+.category-change {
+    margin-left: 0.5rem;
+    background: none;
+    border: 0;
+    color: #fff;
+    font-size: 0.72rem;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
 }
