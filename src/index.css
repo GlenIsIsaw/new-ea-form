@@ -847,3 +847,132 @@ body {
     cursor: pointer;
     padding: 0;
 }
+
+/* Paste at the END of your index.css */
+.status-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #f4faf6 0%, #ffffff 60%);
+}
+.status-card {
+    background: #fff;
+    border: 1px solid #d4e6da;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(26, 92, 56, 0.15);
+    padding: 2.75rem 2.25rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+}
+.status-icon {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.4rem;
+}
+.status-icon svg {
+    width: 36px;
+    height: 36px;
+}
+.status-icon.maintenance {
+    background: #fff6e0;
+    color: #b7791f;
+    border: 1px solid #f3dca7;
+}
+.status-icon.maintenance svg {
+    animation: status-wiggle 2.6s ease-in-out infinite;
+    transform-origin: 50% 50%;
+}
+.status-icon.closed {
+    background: #fdecea;
+    color: #b02a37;
+    border: 1px solid #f1c0c0;
+}
+.status-icon.error {
+    background: #eef1f0;
+    color: #5b6b63;
+    border: 1px solid #d5dcd8;
+}
+@keyframes status-wiggle {
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-12deg);
+    }
+    75% {
+        transform: rotate(12deg);
+    }
+}
+.status-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1a5c38;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+}
+.status-message {
+    font-size: 0.92rem;
+    color: #374151;
+    line-height: 1.65;
+    margin-bottom: 0.6rem;
+}
+.status-sub {
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin: 0 0 1.25rem;
+}
+.status-btn {
+    background: linear-gradient(135deg, #1a5c38, #2d8653);
+    color: #fff;
+    border: 0;
+    border-radius: 7px;
+    padding: 0.55rem 1.6rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        opacity 0.15s,
+        box-shadow 0.15s;
+}
+.status-btn:hover {
+    opacity: 0.92;
+    box-shadow: 0 3px 12px rgba(26, 92, 56, 0.3);
+}
+.status-divider {
+    height: 1px;
+    background: #d4e6da;
+    margin: 1.5rem 0 1.1rem;
+}
+.status-foot {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #8a9b91;
+    margin: 0;
+}
+@media (max-width: 576px) {
+    .status-card {
+        padding: 2rem 1.5rem;
+    }
+    .status-title {
+        font-size: 1.15rem;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .status-icon.maintenance svg {
+        animation: none;
+    }
+}

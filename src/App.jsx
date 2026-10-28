@@ -17,10 +17,17 @@ import {
 import FamilyMemberCard from "./components/FamilyMemberCard";
 import { Turnstile } from "@marsidev/react-turnstile";
 import CategoryGate, { CATEGORY_LABELS } from "./components/CategoryGate";
+import {
+  useSiteStatus,
+  StatusLoading,
+  MaintenancePage,
+  ClosedPage,
+  StatusError,
+} from "./components/SiteGate";
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFntaeOi6xSmnaDl";
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbzBbTy_1UA3P6uLOV2rnJgUJNhJn74oIG-X-QFZ1GjUwrx7R8Oyz0cqYkC_paBU_8jIrA/exec";
+  "https://script.google.com/macros/s/AKfycbyd1RnD-CiHMK_I2sfnbTxbEQrM46fMMnlA07-lp8UV8YNCOEHqDbvj-3Vq6B6ChGoL/exec";
 
 const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTH_YEAR = 2014;
@@ -179,6 +186,7 @@ export default function App() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaError, setCaptchaError] = useState("");
   const turnstileRef = useRef(null);
+  const { status, setStatus, check: recheckStatus } = useSiteStatus(API_URL);
 
   // family states: these must come BEFORE isDirty
   const [family, setFamily] = useState([emptyMember()]);
@@ -418,6 +426,8 @@ export default function App() {
       const res = await fetch(API_URL, { method: "POST", body });
       const result = await res.json();
       if (result.success) setDone(true);
+      else if (result.code === "MAINTENANCE" || result.code === "CLOSED")
+        setStatus(result.code);
       else alert(result.error || "Submission failed. Please try again.");
     } catch (err) {
       console.error(err);
@@ -527,6 +537,12 @@ export default function App() {
         }}
       />
     );
+
+  if (status === null) return <StatusLoading />;
+  if (status === "MAINTENANCE")
+    return <MaintenancePage onRetry={recheckStatus} />;
+  if (status === "CLOSED") return <ClosedPage onRetry={recheckStatus} />;
+  if (status === "ERROR") return <StatusError onRetry={recheckStatus} />;
 
   if (step === "choose")
     return (
