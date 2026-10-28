@@ -20,7 +20,9 @@ export function useSiteStatus(apiUrl) {
 
   const check = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}?action=status&t=${Date.now()}`, { cache: "no-store" });
+      const res = await fetch(`${apiUrl}?action=status&t=${Date.now()}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       setStatus(VALID.includes(data.state) ? data.state : "ERROR");
     } catch {
@@ -82,7 +84,16 @@ const WifiOffIcon = () => (
   </svg>
 );
 
-function StatusCard({ tone, icon: Icon, title, message, sub, onRetry, retryText = "Refresh", role }) {
+function StatusCard({
+  tone,
+  icon: Icon,
+  title,
+  message,
+  sub,
+  onRetry,
+  retryText = "Refresh",
+  role,
+}) {
   return (
     <div className="status-overlay" role={role} aria-live="polite">
       <div className="status-card">
