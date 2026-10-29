@@ -17,6 +17,8 @@ const RETRY_MS = 15000; // re-check faster after an error
 
 export function useSiteStatus(apiUrl) {
   const [status, setStatus] = useState(null);
+  const [notice, setNotice] = useState("NONE"); // "NONE" | "FILLING" | "FULL" = which slot pop-up to show
+  const [noticeFrom, setNoticeFrom] = useState(""); // date/time text shown in the "slots full" pop-up
 
   const check = useCallback(async () => {
     try {
@@ -24,7 +26,19 @@ export function useSiteStatus(apiUrl) {
         cache: "no-store",
       });
       const data = await res.json();
-      setStatus(VALID.includes(data.state) ? data.state : "ERROR");
+      if (VALID.includes(data.state)) {
+        setStatus(data.state);
+        setNotice(
+          data.notice === "FILLING" || data.notice === "FULL"
+            ? data.notice
+            : "NONE",
+        );
+        setNoticeFrom(
+          typeof data.from === "string" ? data.from.slice(0, 80) : "",
+        );
+      } else {
+        setStatus("ERROR");
+      }
     } catch {
       // a failed re-check keeps the last known state; only the very first check (or a previous error) shows ERROR
       setStatus((prev) => (prev === null || prev === "ERROR" ? "ERROR" : prev));
@@ -50,7 +64,7 @@ export function useSiteStatus(apiUrl) {
     return () => clearInterval(id);
   }, [check, status]);
 
-  return { status, setStatus, check };
+  return { status, setStatus, check, notice, noticeFrom };
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +105,7 @@ function StatusCard({
   message,
   sub,
   onRetry,
-  retryText = "Refresh",
+  retryText = "Check again",
   role,
 }) {
   return (
@@ -120,7 +134,7 @@ export function StatusLoading() {
     <div className="status-overlay" role="status" aria-live="polite">
       <div className="status-card">
         <div className="spinner-border mb-3" style={{ color: "#1a5c38" }} />
-        <h2 className="status-title">Getting Ready</h2>
+        <h2 className="status-title">The application is loading</h2>
         <p className="status-sub">Please wait a moment.</p>
       </div>
     </div>

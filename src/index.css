@@ -976,3 +976,122 @@ body {
         animation: none;
     }
 }
+
+/* Paste at the END of your index.css */
+.slot-toast-container {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 2000; /* above the Bootstrap modals (1055) */
+    width: 100%;
+    max-width: 440px;
+    padding: 1rem;
+    pointer-events: none;
+}
+.slot-toast {
+    width: 100%;
+    pointer-events: auto;
+    background: #fff;
+    border: 1px solid #d4e6da;
+    border-left-width: 5px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+    overflow: hidden;
+}
+.slot-toast.filling {
+    border-color: #f3dca7;
+    border-left-color: #d69e2e;
+}
+.slot-toast.full {
+    border-color: #f1c0c0;
+    border-left-color: #c0392b;
+}
+.slot-toast-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 0.9rem 0.9rem 0.8rem;
+}
+.slot-toast-icon {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.slot-toast-icon svg {
+    width: 21px;
+    height: 21px;
+}
+.slot-toast-icon.filling {
+    background: #fff6e0;
+    color: #b7791f;
+}
+.slot-toast-icon.full {
+    background: #fdecea;
+    color: #b02a37;
+}
+.slot-toast-text {
+    flex: 1;
+    min-width: 0;
+}
+.slot-toast-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1f2d26;
+    margin-bottom: 0.15rem;
+}
+.slot-toast-body {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: #4b5563;
+}
+.slot-toast-close {
+    flex-shrink: 0;
+    border: 0;
+    background: none;
+    color: #6b7280;
+    font-size: 1.4rem;
+    line-height: 1;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.slot-toast-close:hover {
+    background: #f1f5f3;
+    color: #1f2d26;
+}
+.slot-toast-bar {
+    height: 3px;
+    width: 100%;
+    transform-origin: left center;
+    animation: slot-toast-shrink 7s linear forwards;
+}
+.slot-toast-bar.filling {
+    background: #d69e2e;
+}
+.slot-toast-bar.full {
+    background: #c0392b;
+}
+@keyframes slot-toast-shrink {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+@media (max-width: 576px) {
+    .slot-toast-container {
+        max-width: 100%;
+        padding: 0.75rem;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .slot-toast-bar {
+        animation: none;
+    }
+}

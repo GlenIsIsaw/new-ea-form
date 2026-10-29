@@ -2,7 +2,8 @@ import { Modal, Button, Row, Col, Form } from "react-bootstrap";
 import { useState, useEffect } from "react";
 import { MONTHS } from "../data/options";
 
-const show_ = (value) => (value && String(value).trim() ? String(value).trim() : "-");
+const show_ = (value) =>
+  value && String(value).trim() ? String(value).trim() : "-";
 
 function InfoRow({ label, value }) {
   return (
@@ -22,7 +23,16 @@ function SectionHeader({ title }) {
 }
 
 // `data` is the review object built in App.jsx (birthday and salary already formatted)
-export default function ReviewModal({ show, onHide, data, onConfirm, family = [] }) {
+export default function ReviewModal({
+  show,
+  onHide,
+  data,
+  onConfirm,
+  family = [],
+  auth = null,
+  studentSameAsAuth = false,
+}) {
+  const sp = auth ? "Student - " : "";
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
@@ -32,11 +42,50 @@ export default function ReviewModal({ show, onHide, data, onConfirm, family = []
   return (
     <Modal show={show} onHide={onHide} size="lg" scrollable centered>
       <Modal.Header closeButton className="review-modal-header">
-        <Modal.Title className="review-modal-title">Review Your Information</Modal.Title>
+        <Modal.Title className="review-modal-title">
+          Review Your Information
+        </Modal.Title>
       </Modal.Header>
 
       <Modal.Body className="review-modal-body">
-        <SectionHeader title="Full Name" />
+        {auth && (
+          <>
+            <SectionHeader title="Authorized Person" />
+            <div className="review-section-body">
+              <InfoRow label="Relationship" value={auth.relationship} />
+              <InfoRow label="Last Name" value={auth.lastName} />
+              <InfoRow label="First Name" value={auth.firstName} />
+              <InfoRow label="Middle Name" value={auth.middleName} />
+              <InfoRow label="Extension" value={auth.extension} />
+              <InfoRow label="Gender" value={auth.sex} />
+              <InfoRow label="Civil Status" value={auth.civilStatus} />
+              <InfoRow
+                label="Birthday"
+                value={
+                  auth.bMonth && auth.bDay && auth.bYear
+                    ? `${MONTHS[auth.bMonth - 1]} ${auth.bDay}, ${auth.bYear}`
+                    : ""
+                }
+              />
+              <InfoRow label="PhilSys ID No." value={auth.philsys} />
+              <InfoRow label="Contact Number" value={auth.contact} />
+              <InfoRow label="Occupation" value={auth.occupation} />
+              <InfoRow
+                label="Monthly Salary"
+                value={
+                  auth.salary
+                    ? `₱${Number(auth.salary).toLocaleString("en-PH")}`
+                    : ""
+                }
+              />
+              <InfoRow label="Municipality" value={auth.municipality} />
+              <InfoRow label="Barangay" value={auth.barangay} />
+              <InfoRow label="Purok / Street" value={auth.street} />
+            </div>
+          </>
+        )}
+
+        <SectionHeader title={`${sp}Full Name`} />
         <div className="review-section-body">
           <InfoRow label="Last Name" value={data.lastName} />
           <InfoRow label="First Name" value={data.firstName} />
@@ -44,7 +93,7 @@ export default function ReviewModal({ show, onHide, data, onConfirm, family = []
           <InfoRow label="Extension" value={data.extension} />
         </div>
 
-        <SectionHeader title="Personal Information" />
+        <SectionHeader title={`${sp}Personal Information`} />
         <div className="review-section-body">
           <InfoRow label="Sex" value={data.sex} />
           <InfoRow label="Civil Status" value={data.civilStatus} />
@@ -53,7 +102,7 @@ export default function ReviewModal({ show, onHide, data, onConfirm, family = []
           <InfoRow label="Birthday" value={data.birthday} />
         </div>
 
-        <SectionHeader title="Contact and Other Information" />
+        <SectionHeader title={`${sp}Contact and Other Information`} />
         <div className="review-section-body">
           <InfoRow label="PhilSys ID No." value={data.philsys} />
           <InfoRow label="Occupation" value={data.occupation} />
@@ -62,8 +111,18 @@ export default function ReviewModal({ show, onHide, data, onConfirm, family = []
           <InfoRow label="Email" value={data.email} />
         </div>
 
-        <SectionHeader title="Address" />
+        <SectionHeader title={`${sp}Address`} />
         <div className="review-section-body">
+          {auth && (
+            <InfoRow
+              label="Address"
+              value={
+                studentSameAsAuth
+                  ? "SAME AS AUTHORIZED PERSON"
+                  : "DIFFERENT ADDRESS"
+              }
+            />
+          )}
           <InfoRow label="Municipality" value={data.municipality} />
           <InfoRow label="Barangay" value={data.barangay} />
           <InfoRow label="Purok / Street" value={data.street} />
@@ -80,11 +139,26 @@ export default function ReviewModal({ show, onHide, data, onConfirm, family = []
               <InfoRow label="Extension" value={m.extension} />
               <InfoRow label="Gender" value={m.sex} />
               <InfoRow label="Civil Status" value={m.civilStatus} />
-              <InfoRow label="Birthday" value={m.bMonth && m.bDay && m.bYear ? `${MONTHS[m.bMonth - 1]} ${m.bDay}, ${m.bYear}` : ""} />
+              <InfoRow
+                label="Birthday"
+                value={
+                  m.bMonth && m.bDay && m.bYear
+                    ? `${MONTHS[m.bMonth - 1]} ${m.bDay}, ${m.bYear}`
+                    : ""
+                }
+              />
               <InfoRow label="Contact Number" value={m.contact} />
               <InfoRow label="Occupation" value={m.occupation} />
-              <InfoRow label="Monthly Salary" value={m.salary ? `₱${Number(m.salary).toLocaleString("en-PH")}` : ""} />
-              <InfoRow label="Address" value={m.sameAddress ? "SAME AS STUDENT" : "DIFFERENT ADDRESS"} />
+              <InfoRow
+                label="Monthly Salary"
+                value={
+                  m.salary ? `₱${Number(m.salary).toLocaleString("en-PH")}` : ""
+                }
+              />
+              <InfoRow
+                label="Address"
+                value={m.sameAddress ? "SAME AS STUDENT" : "DIFFERENT ADDRESS"}
+              />
               <InfoRow label="Municipality" value={m.municipality} />
               <InfoRow label="Barangay" value={m.barangay} />
               <InfoRow label="Purok / Street" value={m.street} />
@@ -94,7 +168,9 @@ export default function ReviewModal({ show, onHide, data, onConfirm, family = []
       </Modal.Body>
 
       {/* Acknowledgement: outside the scrollable body, anchored above the footer */}
-      <div className={`review-acknowledgement ${agreed ? "review-ack-done" : "review-ack-pending"}`}>
+      <div
+        className={`review-acknowledgement ${agreed ? "review-ack-done" : "review-ack-pending"}`}
+      >
         <label htmlFor="confirmInformation" className="review-ack-inner">
           <Form.Check
             id="confirmInformation"
@@ -103,15 +179,20 @@ export default function ReviewModal({ show, onHide, data, onConfirm, family = []
             className="review-ack-check"
           />
           <span className="review-ack-text">
-            I confirm that the information above is true and correct. I consent to the use of my personal data
-            solely for the Educational Assistance Application and acknowledge that I am responsible for the accuracy of the
+            I confirm that the information above is true and correct. I consent
+            to the use of my personal data solely for the TDP Application and
+            acknowledge that I am responsible for the accuracy of the
             information I submitted.
           </span>
         </label>
       </div>
 
       <Modal.Footer className="review-modal-footer">
-        <Button variant="outline-secondary" className="btn-go-back" onClick={onHide}>
+        <Button
+          variant="outline-secondary"
+          className="btn-go-back"
+          onClick={onHide}
+        >
           Go Back
         </Button>
         <Button

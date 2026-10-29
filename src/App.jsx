@@ -7,6 +7,12 @@ import { MUNICIPALITIES, BARANGAYS } from "./data/locations";
 import ReviewModal from "./components/ReviewModal";
 import SuccessPage from "./components/SucessPageWrapper";
 import { SCHOOL_GROUPS, OUTSIDE_CN } from "./data/school";
+import {
+  SHS_GROUPS,
+  OTHERS_SCHOOL,
+  isOtherSchool,
+  YEAR_LEVELS_AUTH,
+} from "./data/schoolAuth";
 import { MONTHS, EXTENSIONS, SEX, CIVIL, daysIn } from "./data/options";
 import {
   MAX_FAMILY,
@@ -14,9 +20,16 @@ import {
   validateMember,
   validateMemberField,
 } from "./data/family";
+import {
+  emptyAuthorized,
+  validateAuthorized,
+  validateAuthorizedField,
+} from "./data/authorized";
 import FamilyMemberCard from "./components/FamilyMemberCard";
+import AuthorizedPersonSection from "./components/AuthorizedPersonSection";
 import { Turnstile } from "@marsidev/react-turnstile";
 import CategoryGate, { CATEGORY_LABELS } from "./components/CategoryGate";
+import SlotToast from "./components/SlotToast";
 import {
   useSiteStatus,
   StatusLoading,
@@ -27,9 +40,8 @@ import {
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFntaeOi6xSmnaDl";
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbyd1RnD-CiHMK_I2sfnbTxbEQrM46fMMnlA07-lp8UV8YNCOEHqDbvj-3Vq6B6ChGoL/exec";
+  "https://script.google.com/macros/s/AKfycbx75GIN__JCElzLJmvpdLncJD193GtIP00R3idZk_3EL9mDYpoFX1oynnBpKu5xQHNz3g/exec";
 
-const THIS_YEAR = new Date().getFullYear();
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
 const YEAR_LEVELS = [
@@ -107,15 +119,17 @@ const validators = {
         : "",
   school: (v) => (v ? "" : "Please select your school."),
   otherSchool: (v, f) =>
-    f.school !== OUTSIDE_CN
+    !isOtherSchool(f.school)
       ? ""
       : !v.trim()
         ? "Please type the name of your school/university."
         : !SCHOOL_RE.test(v.trim())
           ? "Use letters, numbers and basic punctuation only."
           : "",
-  municipality: (v) => (v ? "" : "Please select your municipality."),
-  barangay: (v) => (v ? "" : "Please select your barangay."),
+  // when "same address as the authorized person" is ticked, the authorized person's own address is what gets checked
+  municipality: (v, f) =>
+    f.sameAsAuth || v ? "" : "Please select your municipality.",
+  barangay: (v, f) => (f.sameAsAuth || v ? "" : "Please select your barangay."),
   yearLevel: (v) => (v ? "" : "Please select your year level."),
 };
 
@@ -186,7 +200,55 @@ export default function App() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaError, setCaptchaError] = useState("");
   const turnstileRef = useRef(null);
-  const { status, setStatus, check: recheckStatus } = useSiteStatus(API_URL);
+  const {
+    status,
+    setStatus,
+    check: recheckStatus,
+    notice,
+    noticeFrom,
+  } = useSiteStatus(API_URL);
+
+  // Slot pop-up: appears when the page opens (and again whenever you switch a notice on), stays 7 seconds, one at a time
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeKind, setNoticeKind] = useState("NONE");
+  const lastNotice = useRef("NONE");
+  const noticeTimer = useRef(null);
+  useEffect(() => {
+    if (status !== "OPEN" || notice === "NONE") {
+      lastNotice.current = "NONE";
+      clearTimeout(noticeTimer.current);
+      setNoticeVisible(false);
+      return;
+    }
+    if (notice === lastNotice.current) return;
+    lastNotice.current = notice;
+    setNoticeKind(notice);
+    setNoticeVisible(true);
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNoticeVisible(false), 7000);
+  }, [notice, status]);
+  useEffect(() => () => clearTimeout(noticeTimer.current), []);
+
+  // true for "Authorization / Minor Age / Senior High School"
+  const isAuth = category === "AUTHORIZATION";
+
+  // authorized person (only used when isAuth)
+  const [auth, setAuth] = useState(emptyAuthorized());
+  const [authErrors, setAuthErrors] = useState({});
+  const [sameAsAuth, setSameAsAuth] = useState(true);
+
+  // The student's address: when "same as the authorized person" is ticked it FOLLOWS the authorized
+  // person's address live, so a later change above is never missed. `ef` is the student with that applied.
+  const useSameAuth = isAuth && sameAsAuth;
+  const ef = useSameAuth
+    ? {
+        ...f,
+        municipality: auth.municipality,
+        barangay: auth.barangay,
+        street: auth.street,
+        sameAsAuth: true,
+      }
+    : { ...f, sameAsAuth: false };
 
   // family states: these must come BEFORE isDirty
   const [family, setFamily] = useState([emptyMember()]);
@@ -195,9 +257,9 @@ export default function App() {
     m.sameAddress
       ? {
           ...m,
-          municipality: f.municipality,
-          barangay: f.barangay,
-          street: f.street,
+          municipality: ef.municipality,
+          barangay: ef.barangay,
+          street: ef.street,
         }
       : m,
   );
@@ -206,19 +268,20 @@ export default function App() {
   const leavingRef = useRef(false);
   const guardedRef = useRef(false);
 
-  // now it's safe to use `family`
+  // now it's safe to use `family` and `auth`
   const isDirty =
     JSON.stringify(f) !== JSON.stringify(INITIAL) ||
-    JSON.stringify(family) !== JSON.stringify([emptyMember()]);
+    JSON.stringify(family) !== JSON.stringify([emptyMember()]) ||
+    JSON.stringify(auth) !== JSON.stringify(emptyAuthorized());
 
-  const check = (name, next = f) => validators[name]?.(next[name], next) ?? "";
+  const check = (name, next = ef) => validators[name]?.(next[name], next) ?? "";
   const setError = (name, msg) => setErrors((p) => ({ ...p, [name]: msg }));
 
   const update = (name, value) => {
     setF((p) => {
       const next = { ...p, [name]: value };
       if (name === "municipality") next.barangay = "";
-      if (name === "school" && value !== OUTSIDE_CN) next.otherSchool = "";
+      if (name === "school" && !isOtherSchool(value)) next.otherSchool = "";
       if (name === "bMonth" || name === "bYear") {
         if (Number(next.bDay) > daysIn(next.bMonth, next.bYear)) next.bDay = "";
       }
@@ -245,6 +308,38 @@ export default function App() {
     setError("birthday", "");
   };
 
+  // ---- authorized person ----
+  const AUTH_RELATED = {
+    bMonth: "birthday",
+    bDay: "birthday",
+    bYear: "birthday",
+    occupation: "salary",
+  };
+
+  const updateAuth = (name, value) => {
+    setAuth((p) => {
+      const next = { ...p, [name]: value };
+      if (name === "municipality") next.barangay = "";
+      if (
+        (name === "bMonth" || name === "bYear") &&
+        Number(next.bDay) > daysIn(next.bMonth, next.bYear)
+      )
+        next.bDay = "";
+      return next;
+    });
+    const cleared = Object.fromEntries(
+      [name, AUTH_RELATED[name]].filter(Boolean).map((k) => [k, ""]),
+    );
+    setAuthErrors((p) => ({ ...p, ...cleared }));
+  };
+
+  const blurAuth = (name) =>
+    setAuthErrors((p) => ({
+      ...p,
+      [name]: validateAuthorizedField(name, auth),
+    }));
+
+  // ---- family members ----
   const RELATED = {
     bMonth: "birthday",
     bDay: "birthday",
@@ -298,9 +393,9 @@ export default function App() {
             : {
                 ...m,
                 sameAddress: false,
-                municipality: f.municipality,
-                barangay: f.barangay,
-                street: f.street,
+                municipality: ef.municipality,
+                barangay: ef.barangay,
+                street: ef.street,
               },
       ),
     );
@@ -328,6 +423,23 @@ export default function App() {
       ? doRemove(i)
       : setRemoveIndex(i);
 
+  // Untick: keep the address that was mirrored so the user only edits what is different
+  const toggleSameAsAuth = (checked) => {
+    if (!checked) {
+      setF((p) => ({
+        ...p,
+        municipality: auth.municipality,
+        barangay: auth.barangay,
+        street: auth.street,
+      }));
+      setErrors((p) => ({ ...p, municipality: "", barangay: "" }));
+    }
+    setSameAsAuth(checked);
+  };
+
+  const schoolName = () =>
+    isOtherSchool(f.school) ? f.otherSchool.trim() : f.school;
+
   const review = (e) => {
     e.preventDefault();
 
@@ -339,6 +451,18 @@ export default function App() {
     });
     setErrors(found);
 
+    // authorized person (authorization category only)
+    let authInvalid = false;
+    if (isAuth) {
+      const authErrs = validateAuthorized(auth);
+      if (!authErrs.philsys && auth.philsys && auth.philsys === f.philsys) {
+        authErrs.philsys =
+          "The authorized person and the student cannot have the same PhilSys number.";
+      }
+      setAuthErrors(authErrs);
+      authInvalid = Object.keys(authErrs).length > 0;
+    }
+
     // family members: every member needs the required details
     const famErrs = effectiveFamily.map((m) => validateMember(m));
     setFamilyErrors(famErrs);
@@ -348,7 +472,12 @@ export default function App() {
     if (!captchaToken) setCaptchaError("Please complete the verification.");
 
     // stop here if ANYTHING is missing
-    if (Object.keys(found).length || famInvalid || !captchaToken) {
+    if (
+      Object.keys(found).length ||
+      authInvalid ||
+      famInvalid ||
+      !captchaToken
+    ) {
       setTimeout(() => {
         document
           .querySelector(".is-invalid, .d-block.invalid-feedback, .text-danger")
@@ -358,8 +487,8 @@ export default function App() {
     }
 
     setReviewData({
-      ...f,
-      school: f.school === OUTSIDE_CN ? f.otherSchool.trim() : f.school,
+      ...ef,
+      school: schoolName(),
       birthday: `${MONTHS[f.bMonth - 1]} ${f.bDay}, ${f.bYear}`,
       salary: f.salary ? `₱${Number(f.salary).toLocaleString("en-PH")}` : "",
     });
@@ -377,7 +506,6 @@ export default function App() {
     setShowConfirm(false);
     setSubmitting(true);
     try {
-      // ① NEW: build the family list (goes ABOVE `const body`)
       const familyPayload = effectiveFamily.map((m) => ({
         relationship: m.relationship,
         lastName: m.lastName.trim(),
@@ -398,10 +526,35 @@ export default function App() {
         street: m.street.trim(),
       }));
 
+      // only the authorization category sends an authorized person
+      const authPayload = isAuth
+        ? {
+            authorized: JSON.stringify({
+              relationship: auth.relationship,
+              lastName: auth.lastName.trim(),
+              firstName: auth.firstName.trim(),
+              middleName: auth.middleName.trim(),
+              extension: auth.extension,
+              sex: auth.sex,
+              civilStatus: auth.civilStatus,
+              bMonth: MONTHS[auth.bMonth - 1],
+              bDay: auth.bDay,
+              bYear: auth.bYear,
+              contact: auth.contact,
+              occupation: auth.occupation.trim(),
+              salary: auth.salary,
+              philsys: auth.philsys,
+              municipality: auth.municipality,
+              barangay: auth.barangay,
+              street: auth.street.trim(),
+            }),
+          }
+        : {};
+
       const body = new URLSearchParams({
-        municipality: f.municipality,
-        barangay: f.barangay,
-        street: f.street.trim(),
+        municipality: ef.municipality,
+        barangay: ef.barangay,
+        street: ef.street.trim(),
         lastName: f.lastName.trim(),
         firstName: f.firstName.trim(),
         middleName: f.middleName.trim(),
@@ -409,7 +562,7 @@ export default function App() {
         sex: f.sex,
         civilStatus: f.civilStatus,
         yearLevel: f.yearLevel,
-        school: f.school === OUTSIDE_CN ? f.otherSchool.trim() : f.school,
+        school: schoolName(),
         bMonth: MONTHS[f.bMonth - 1],
         bDay: f.bDay,
         bYear: f.bYear,
@@ -419,8 +572,10 @@ export default function App() {
         philsys: f.philsys,
         email: f.email.trim(),
         family: JSON.stringify(familyPayload),
+        ...authPayload,
+        ...(isAuth ? { sameAsAuth: useSameAuth ? "YES" : "NO" } : {}),
         category: category,
-        turnstileToken: captchaToken, // ② NEW: add this line at the end of the list
+        turnstileToken: captchaToken,
       });
 
       const res = await fetch(API_URL, { method: "POST", body });
@@ -439,19 +594,23 @@ export default function App() {
     turnstileRef.current?.reset();
   };
 
-  const reset = () => {
+  const clearForm = () => {
     setF(INITIAL);
     setErrors({});
-    setDone(false);
+    setAuth(emptyAuthorized());
+    setAuthErrors({});
+    setSameAsAuth(true);
     setFamily([emptyMember()]);
     setFamilyErrors([{}]);
   };
 
+  const reset = () => {
+    clearForm();
+    setDone(false);
+  };
+
   const resetAll = () => {
-    setF(INITIAL);
-    setErrors({});
-    setFamily([emptyMember()]);
-    setFamilyErrors([{}]);
+    clearForm();
     setCaptchaToken("");
     turnstileRef.current?.reset();
   };
@@ -526,17 +685,7 @@ export default function App() {
       </div>
     );
 
-  if (done)
-    return (
-      <SuccessPage
-        onNewSubmission={() => {
-          setF(INITIAL);
-          setErrors({});
-          setFamily([emptyMember()]);
-          setFamilyErrors([{}]);
-        }}
-      />
-    );
+  if (done) return <SuccessPage onNewSubmission={clearForm} />;
 
   if (status === null) return <StatusLoading />;
   if (status === "MAINTENANCE")
@@ -544,51 +693,36 @@ export default function App() {
   if (status === "CLOSED") return <ClosedPage onRetry={recheckStatus} />;
   if (status === "ERROR") return <StatusError onRetry={recheckStatus} />;
 
+  const noticeToast = (
+    <SlotToast
+      show={noticeVisible}
+      kind={noticeKind}
+      from={noticeFrom}
+      onClose={() => setNoticeVisible(false)}
+    />
+  );
+
   if (step === "choose")
     return (
-      <CategoryGate
-        onSelect={(key) => {
-          setCategory(key);
-          setStep(consented ? "instructions" : "privacy");
-        }}
-      />
+      <>
+        <CategoryGate
+          onSelect={(key) => {
+            setCategory(key);
+            setStep(consented ? "instructions" : "privacy");
+          }}
+        />
+        {noticeToast}
+      </>
     );
 
-  const barangays = BARANGAYS[f.municipality] || [];
+  const barangays = BARANGAYS[ef.municipality] || [];
 
-  const dash = (v) => (String(v).trim() ? String(v).trim() : "—");
-  const money = f.salary ? `₱${Number(f.salary).toLocaleString("en-PH")}` : "";
-  const birthdayText =
-    f.bMonth && f.bDay && f.bYear
-      ? `${MONTHS[f.bMonth - 1]} ${f.bDay}, ${f.bYear}`
-      : "";
-  const reviewSections = [
-    {
-      title: "Personal Information",
-      rows: [
-        ["Last Name", f.lastName],
-        ["First Name", f.firstName],
-        ["Middle Name", f.middleName],
-        ["Extension Name", f.extension],
-        ["Sex", f.sex],
-        ["Civil Status", f.civilStatus],
-        ["Birthday", birthdayText],
-        ["Contact Number", f.contact],
-        ["Occupation", f.occupation],
-        ["Monthly Salary", money],
-        ["PhilSys ID No.", f.philsys],
-        ["Email", f.email],
-      ],
-    },
-    {
-      title: "Address",
-      rows: [
-        ["Municipality", f.municipality],
-        ["Barangay", f.barangay],
-        ["Street / Purok", f.street],
-      ],
-    },
-  ];
+  // lists that depend on the category
+  const yearLevels = isAuth ? YEAR_LEVELS_AUTH : YEAR_LEVELS;
+  const schoolGroups = isAuth
+    ? [...SHS_GROUPS, ...SCHOOL_GROUPS]
+    : SCHOOL_GROUPS;
+  const otherOption = isAuth ? OTHERS_SCHOOL : OUTSIDE_CN;
 
   return (
     <div className={step === "form" ? "form-wrapper" : ""}>
@@ -615,7 +749,21 @@ export default function App() {
 
           <div className="form-body">
             <Form onSubmit={review} noValidate>
+              {isAuth && (
+                <AuthorizedPersonSection
+                  data={auth}
+                  errors={authErrors}
+                  onChange={updateAuth}
+                  onBlurField={blurAuth}
+                />
+              )}
+
               <section className="mb-4">
+                {isAuth && (
+                  <p className="family-help">
+                    <span>Now fill in the STUDENT's details.</span>
+                  </p>
+                )}
                 <div className="section-title">Student's Full Name</div>
                 <Row className="g-3">
                   <Col xs={12} md={6} lg={3}>
@@ -650,7 +798,6 @@ export default function App() {
                       autoComplete="additional-name"
                     />
                     <Err msg={errors.middleName} />
-                    {!errors.middleName && <div className="field-hint"></div>}
                   </Col>
                   <Col xs={12} md={6} lg={3}>
                     <Label>Extension Name</Label>
@@ -707,65 +854,71 @@ export default function App() {
                     <Err msg={errors.civilStatus} />
                   </Col>
 
-                  <Row className="g-3 mt-0">
-                    <Col xs={12} md={8}>
-                      <Label required>School / University</Label>
-                      <Form.Select
-                        value={f.school}
-                        onChange={text("school")}
-                        onBlur={blur("school")}
-                        isInvalid={!!errors.school}
-                      >
-                        <option value="">Select School / University</option>
-                        {SCHOOL_GROUPS.map((g) => (
-                          <optgroup key={g.label} label={g.label}>
-                            {g.options.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                        <option value={OUTSIDE_CN}>{OUTSIDE_CN}</option>
-                      </Form.Select>
-                      <Err msg={errors.school} />
-                    </Col>
-
-                    <Col xs={12} md={4}>
-                      <Label required>Year Level</Label>
-                      <Form.Select
-                        value={f.yearLevel}
-                        onChange={text("yearLevel")}
-                        onBlur={blur("yearLevel")}
-                        isInvalid={!!errors.yearLevel}
-                      >
-                        <option value="">Select Year Level</option>
-                        {YEAR_LEVELS.map((x) => (
-                          <option key={x} value={x}>
-                            {x}
-                          </option>
-                        ))}
-                      </Form.Select>
-                      <Err msg={errors.yearLevel} />
-                    </Col>
-
-                    {f.school === OUTSIDE_CN && (
-                      <Col xs={12}>
-                        <Label required>Name of School / University</Label>
-                        <Form.Control
-                          value={f.otherSchool}
-                          onChange={(e) => {
-                            update("otherSchool", e.target.value.toUpperCase());
-                            if (errors.otherSchool) setError("otherSchool", "");
-                          }}
-                          onBlur={blur("otherSchool")}
-                          isInvalid={!!errors.otherSchool}
-                          placeholder="Type the full name of your school/university"
-                        />
-                        <Err msg={errors.otherSchool} />
+                  <Col xs={12}>
+                    <Row className="g-3">
+                      <Col xs={12} md={8}>
+                        <Label required>School / University</Label>
+                        <Form.Select
+                          value={f.school}
+                          onChange={text("school")}
+                          onBlur={blur("school")}
+                          isInvalid={!!errors.school}
+                        >
+                          <option value="">Select School / University</option>
+                          {schoolGroups.map((g) => (
+                            <optgroup key={g.label} label={g.label}>
+                              {g.options.map((s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                          <option value={otherOption}>{otherOption}</option>
+                        </Form.Select>
+                        <Err msg={errors.school} />
                       </Col>
-                    )}
-                  </Row>
+
+                      <Col xs={12} md={4}>
+                        <Label required>Year Level</Label>
+                        <Form.Select
+                          value={f.yearLevel}
+                          onChange={text("yearLevel")}
+                          onBlur={blur("yearLevel")}
+                          isInvalid={!!errors.yearLevel}
+                        >
+                          <option value="">Select Year Level</option>
+                          {yearLevels.map((x) => (
+                            <option key={x} value={x}>
+                              {x}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Err msg={errors.yearLevel} />
+                      </Col>
+
+                      {isOtherSchool(f.school) && (
+                        <Col xs={12}>
+                          <Label required>Name of School / University</Label>
+                          <Form.Control
+                            value={f.otherSchool}
+                            onChange={(e) => {
+                              update(
+                                "otherSchool",
+                                e.target.value.toUpperCase(),
+                              );
+                              if (errors.otherSchool)
+                                setError("otherSchool", "");
+                            }}
+                            onBlur={blur("otherSchool")}
+                            isInvalid={!!errors.otherSchool}
+                            placeholder="Type the full name of the school/university"
+                          />
+                          <Err msg={errors.otherSchool} />
+                        </Col>
+                      )}
+                    </Row>
+                  </Col>
 
                   <Col xs={12}>
                     <Label required>Birthday</Label>
@@ -901,17 +1054,40 @@ export default function App() {
               </section>
 
               <section className="mb-4">
-                <div className="section-title">Address</div>
-                <Row className="g-3">
+                <div className="section-title">Student's Address</div>
+                {isAuth && (
+                  <>
+                    <Form.Check
+                      type="checkbox"
+                      id="student-same-address"
+                      className="family-same mb-1"
+                      checked={sameAsAuth}
+                      onChange={(e) => toggleSameAsAuth(e.target.checked)}
+                      label="Same address as the authorized person (above)"
+                    />
+                    {sameAsAuth && (
+                      <div className="field-hint family-same-hint mb-2">
+                        Using the authorized person's address from above. It
+                        updates automatically if that address changes.
+                      </div>
+                    )}
+                  </>
+                )}
+                <Row className="g-3 mt-0">
                   <Col xs={12} md={6}>
-                    <Label required>Municipality</Label>
+                    <Label required={!useSameAuth}>Municipality</Label>
                     <Form.Select
-                      value={f.municipality}
+                      value={ef.municipality}
                       onChange={text("municipality")}
                       onBlur={blur("municipality")}
+                      disabled={useSameAuth}
                       isInvalid={!!errors.municipality}
                     >
-                      <option value="">Select municipality</option>
+                      <option value="">
+                        {useSameAuth
+                          ? "Fill in the authorized person's address above"
+                          : "Select municipality"}
+                      </option>
                       {MUNICIPALITIES.map((m) => (
                         <option key={m} value={m}>
                           {m}
@@ -921,16 +1097,16 @@ export default function App() {
                     <Err msg={errors.municipality} />
                   </Col>
                   <Col xs={12} md={6}>
-                    <Label required>Barangay</Label>
+                    <Label required={!useSameAuth}>Barangay</Label>
                     <Form.Select
-                      value={f.barangay}
+                      value={ef.barangay}
                       onChange={text("barangay")}
                       onBlur={blur("barangay")}
-                      disabled={!f.municipality}
+                      disabled={useSameAuth || !ef.municipality}
                       isInvalid={!!errors.barangay}
                     >
                       <option value="">
-                        {f.municipality
+                        {ef.municipality
                           ? "Select barangay"
                           : "Select municipality first"}
                       </option>
@@ -945,8 +1121,9 @@ export default function App() {
                   <Col xs={12}>
                     <Label>Street / Purok</Label>
                     <Form.Control
-                      value={f.street}
+                      value={ef.street}
                       onChange={text("street")}
+                      disabled={useSameAuth}
                       autoComplete="street-address"
                     />
                   </Col>
@@ -957,7 +1134,8 @@ export default function App() {
                 <div className="section-title">Family Members</div>
                 <p className="family-help">
                   <span>
-                    Add at least 1 and up to {MAX_FAMILY} family members.
+                    Add at least 1 and up to {MAX_FAMILY} family members of the
+                    student.
                   </span>
                   <span className="family-count">
                     {family.length} of {MAX_FAMILY} added
@@ -1038,6 +1216,7 @@ export default function App() {
           </div>
         </>
       )}
+      {noticeToast}
       <DataPrivacyModal
         show={step === "privacy"}
         onAccept={() => {
@@ -1055,6 +1234,8 @@ export default function App() {
         onHide={() => setShowReview(false)}
         data={reviewData}
         family={effectiveFamily}
+        auth={isAuth ? auth : null}
+        studentSameAsAuth={useSameAuth}
         onConfirm={() => {
           setShowReview(false);
           setShowConfirm(true);
