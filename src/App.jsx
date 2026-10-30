@@ -29,7 +29,6 @@ import FamilyMemberCard from "./components/FamilyMemberCard";
 import AuthorizedPersonSection from "./components/AuthorizedPersonSection";
 import { Turnstile } from "@marsidev/react-turnstile";
 import CategoryGate, { CATEGORY_LABELS } from "./components/CategoryGate";
-import SlotToast from "./components/SlotToast";
 import {
   useSiteStatus,
   StatusLoading,
@@ -37,10 +36,11 @@ import {
   ClosedPage,
   StatusError,
 } from "./components/SiteGate";
+import SlotToast, { NOTICE_MS, CLOSING_SHOW_MS, CLOSING_GAP_MS } from "./components/SlotToast";
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFntaeOi6xSmnaDl";
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbx75GIN__JCElzLJmvpdLncJD193GtIP00R3idZk_3EL9mDYpoFX1oynnBpKu5xQHNz3g/exec";
+  "https://script.google.com/macros/s/AKfycbwlvnfngYJ7GkctSX9L-npvTKeVaSFgl821O1PaGdRhrwu5ZySjrR-OkEaG1r0Sya6emA/exec";
 
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
@@ -55,6 +55,14 @@ const YEAR_LEVELS = [
 const NAME_RE = /^[A-Za-zÀ-ÿñÑ]+(?:[ '-][A-Za-zÀ-ÿñÑ]+)*$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const SCHOOL_RE = /^[A-Za-zÀ-ÿñÑ0-9 .,'’&()/-]{3,150}$/;
+
+const remainingText = (ms) => {
+  const total = Math.max(0, Math.floor(ms / 60000));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const mins = `${m} minute${m === 1 ? "" : "s"}`;
+  return h > 0 ? `${h} hour${h === 1 ? "" : "s"} and ${mins}` : mins;
+};
 
 const hasOccupation = (v) =>
   !!v.trim() && !/^(none|n\/?a|na|nil|-+|not applicable)$/i.test(v.trim());
@@ -205,8 +213,11 @@ export default function App() {
     setStatus,
     check: recheckStatus,
     notice,
-    noticeFrom,
+    noticeFrom, closing, closesAtMs, closesText, clockOffset,
   } = useSiteStatus(API_URL);
+
+    const [closingVisible, setClosingVisible] = useState(false);
+  const [closingRemaining, setClosingRemaining] = useState("");
 
   // Slot pop-up: appears when the page opens (and again whenever you switch a notice on), stays 7 seconds, one at a time
   const [noticeVisible, setNoticeVisible] = useState(false);
@@ -223,11 +234,42 @@ export default function App() {
     if (notice === lastNotice.current) return;
     lastNotice.current = notice;
     setNoticeKind(notice);
+        setClosingVisible(false); // one pop-up at a time
     setNoticeVisible(true);
     clearTimeout(noticeTimer.current);
-    noticeTimer.current = setTimeout(() => setNoticeVisible(false), 7000);
+    noticeTimer.current = setTimeout(() => setNoticeVisible(false), NOTICE_MS);
   }, [notice, status]);
   useEffect(() => () => clearTimeout(noticeTimer.current), []);
+
+    const noticeVisibleRef = useRef(false);
+  const clockRef = useRef(0);
+  useEffect(() => {
+    noticeVisibleRef.current = noticeVisible;
+    clockRef.current = clockOffset;
+  }, [noticeVisible, clockOffset]);
+
+  // closing countdown: shows, pauses, repeats; waits while the other pop-up is showing
+  useEffect(() => {
+    if (status !== "OPEN" || closing !== "ON" || !closesAtMs) {
+      setClosingVisible(false);
+      return;
+    }
+    let timer;
+    const left = () => closesAtMs - (Date.now() + clockRef.current);
+    const hide = () => {
+      setClosingVisible(false);
+      timer = setTimeout(show, CLOSING_GAP_MS);
+    };
+    const show = () => {
+      if (noticeVisibleRef.current) { timer = setTimeout(show, 1000); return; }
+      if (left() <= 0) return;
+      setClosingRemaining(remainingText(left()));
+      setClosingVisible(true);
+      timer = setTimeout(hide, CLOSING_SHOW_MS);
+    };
+    show();
+    return () => clearTimeout(timer);
+  }, [status, closing, closesAtMs]);
 
   // true for "Authorization / Minor Age / Senior High School"
   const isAuth = category === "AUTHORIZATION";
@@ -694,12 +736,12 @@ export default function App() {
   if (status === "ERROR") return <StatusError onRetry={recheckStatus} />;
 
   const noticeToast = (
-    <SlotToast
-      show={noticeVisible}
-      kind={noticeKind}
-      from={noticeFrom}
-      onClose={() => setNoticeVisible(false)}
-    />
+    <>
+      <SlotToast show={noticeVisible} kind={noticeKind} from={noticeFrom}
+        seconds={NOTICE_MS / 1000} onClose={() => setNoticeVisible(false)} />
+      <SlotToast show={closingVisible} kind="CLOSING" closesText={closesText} remaining={closingRemaining}
+        seconds={CLOSING_SHOW_MS / 1000} onClose={() => setClosingVisible(false)} />
+    </>
   );
 
   if (step === "choose")

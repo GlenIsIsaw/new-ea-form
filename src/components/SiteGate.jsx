@@ -20,6 +20,11 @@ export function useSiteStatus(apiUrl) {
   const [notice, setNotice] = useState("NONE"); // "NONE" | "FILLING" | "FULL" = which slot pop-up to show
   const [noticeFrom, setNoticeFrom] = useState(""); // date/time text shown in the "slots full" pop-up
 
+  const [closing, setClosing] = useState("OFF");
+  const [closesAtMs, setClosesAtMs] = useState(0);
+  const [closesText, setClosesText] = useState("");
+  const [clockOffset, setClockOffset] = useState(0);
+
   const check = useCallback(async () => {
     try {
       const res = await fetch(`${apiUrl}?action=status&t=${Date.now()}`, {
@@ -36,6 +41,17 @@ export function useSiteStatus(apiUrl) {
         setNoticeFrom(
           typeof data.from === "string" ? data.from.slice(0, 80) : "",
         );
+        setClosing(data.closing === "ON" ? "ON" : "OFF");
+        setClosesAtMs(
+          Number(data.closesAtMs) > 0 ? Number(data.closesAtMs) : 0,
+        );
+        setClosesText(
+          typeof data.closesText === "string"
+            ? data.closesText.slice(0, 80)
+            : "",
+        );
+        if (Number(data.serverNow) > 0)
+          setClockOffset(Number(data.serverNow) - Date.now());
       } else {
         setStatus("ERROR");
       }
@@ -64,7 +80,7 @@ export function useSiteStatus(apiUrl) {
     return () => clearInterval(id);
   }, [check, status]);
 
-  return { status, setStatus, check, notice, noticeFrom };
+   return { status, setStatus, check, notice, noticeFrom, closing, closesAtMs, closesText, clockOffset };
 }
 
 // ---------------------------------------------------------------------------

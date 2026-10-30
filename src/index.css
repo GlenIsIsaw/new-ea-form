@@ -1095,3 +1095,7 @@ body {
         animation: none;
     }
 }
+
+.slot-toast.closing { border-color: #f6c9a6; border-left-color: #dd6b20; }
+.slot-toast-icon.closing { background: #fff0e3; color: #c05621; }
+.slot-toast-bar.closing { background: #dd6b20; }

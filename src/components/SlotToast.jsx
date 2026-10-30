@@ -1,5 +1,9 @@
 import { Toast, ToastContainer } from "react-bootstrap";
 
+export const NOTICE_MS = 7000;        // first two pop-ups: how long they stay
+export const CLOSING_SHOW_MS = 10000; // closing pop-up: how long it stays
+export const CLOSING_GAP_MS = 8000;   // closing pop-up: pause before it pops up again
+
 // Edit the wording here.
 const COPY = {
   FILLING: {
@@ -9,10 +13,15 @@ const COPY = {
   },
   FULL: {
     title: "Slots for this batch are full",
-    body: (from) =>
+    body: ({ from }) =>
       `Slots for this batch are now full. Applications submitted from ${
         from || "now on"
       } will be placed under waitlist or subject to the next batch. Thank you for understanding.`,
+  },
+    CLOSING: {
+    title: "Application closing soon",
+    body: ({ closesText, remaining }) =>
+      `Application closes on ${closesText}. Please submit your application now. Time remaining is ${remaining}.`
   },
 };
 
@@ -40,10 +49,10 @@ const AlertIcon = () => (
 
 // A controlled pop-up: App.jsx decides WHEN to show it (once when the page opens, for 7 seconds).
 // Only one kind is ever shown at a time ("FILLING" or "FULL").
-export default function SlotToast({ show, kind, from, onClose }) {
+export default function SlotToast({ show, kind, from, closesText, remaining, seconds = 7, onClose }) {
   const copy = COPY[kind];
   if (!copy) return null;
-  const tone = kind === "FULL" ? "full" : "filling";
+  const tone = kind === "FULL" ? "full" : kind === "CLOSING" ? "closing" : "filling";
   const Icon = kind === "FULL" ? AlertIcon : ClockIcon;
 
   return (
@@ -63,7 +72,7 @@ export default function SlotToast({ show, kind, from, onClose }) {
           </span>
           <div className="slot-toast-text">
             <div className="slot-toast-title">{copy.title}</div>
-            <div className="slot-toast-body">{copy.body(from)}</div>
+            <div className="slot-toast-body">{copy.body({ from, closesText, remaining })}</div>
           </div>
           <button
             type="button"
@@ -75,7 +84,7 @@ export default function SlotToast({ show, kind, from, onClose }) {
           </button>
         </div>
         {/* thin bar that shrinks over the 7 seconds the notice stays */}
-        <div className={`slot-toast-bar ${tone}`} key={`${kind}-${show}`} />
+        <div className={`slot-toast-bar ${tone}`} key={`${kind}-${show}`} style={{ animationDuration: `${seconds}s` }} />
       </Toast>
     </ToastContainer>
   );
