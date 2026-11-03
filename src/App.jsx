@@ -35,6 +35,7 @@ import {
   MaintenancePage,
   ClosedPage,
   StatusError,
+  CountdownPage,
 } from "./components/SiteGate";
 import SlotToast, {
   NOTICE_MS,
@@ -45,7 +46,7 @@ import SlotFab from "./components/SlotFab";
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFntaeOi6xSmnaDl";
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbzPh5w8p-p9wvoVqQs6xq8jJxA1Ghl4mpbllmE8CSxIEWXByXeT5wVyoqFQajPASbsucQ/exec";
+  "https://script.google.com/macros/s/AKfycbx1GfXJEA3VBqu59CLk4mngpgJb0QanaYmCJuq3KAi2RZaY2fDFrzCF5v8UntmeeTJVtg/exec";
 
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
@@ -224,6 +225,9 @@ export default function App() {
     closesAtMs,
     closesText,
     clockOffset,
+    opensAtMs,
+    opensText,
+    online,
   } = useSiteStatus(API_URL);
 
   const [closingVisible, setClosingVisible] = useState(false);
@@ -636,7 +640,7 @@ export default function App() {
       const res = await fetch(API_URL, { method: "POST", body });
       const result = await res.json();
       if (result.success) setDone(true);
-      else if (result.code === "MAINTENANCE" || result.code === "CLOSED")
+      else if (["MAINTENANCE", "CLOSED", "COUNTDOWN"].includes(result.code))
         setStatus(result.code);
       else alert(result.error || "Submission failed. Please try again.");
     } catch (err) {
@@ -747,6 +751,18 @@ export default function App() {
     return <MaintenancePage onRetry={recheckStatus} />;
   if (status === "CLOSED") return <ClosedPage onRetry={recheckStatus} />;
   if (status === "ERROR") return <StatusError onRetry={recheckStatus} />;
+
+  if (status === "COUNTDOWN")
+    return (
+      <CountdownPage
+        opensAtMs={opensAtMs}
+        opensText={opensText}
+        clockOffset={clockOffset}
+        onDone={recheckStatus}
+        online={online}
+        apiUrl={API_URL}
+      />
+    );
 
   const showSlotToast = () => {
     setNoticeKind(notice === "NONE" ? "AVAILABLE" : notice);

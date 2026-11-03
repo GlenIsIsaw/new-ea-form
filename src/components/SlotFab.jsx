@@ -11,7 +11,7 @@ const icon = {
 const LOOK = {
   NONE: {
     tone: "available",
-    label: "Slots available",
+    label: "Slots are available",
     svg: (
       <svg {...icon}>
         <circle cx="12" cy="12" r="9" />
@@ -21,7 +21,7 @@ const LOOK = {
   },
   FILLING: {
     tone: "filling",
-    label: "Slots filling",
+    label: "Almost Full",
     svg: (
       <svg {...icon}>
         <path d="M6 3h12M6 21h12" />
@@ -31,7 +31,7 @@ const LOOK = {
   },
   CLOSING: {
     tone: "closing",
-    label: "Closing soon",
+    label: "Closing Soon",
     svg: (
       <svg {...icon}>
         <path d="M6 3h12M6 21h12" />
@@ -41,7 +41,7 @@ const LOOK = {
   },
   FULL: {
     tone: "full",
-    label: "Slots full",
+    label: "Already Full",
     svg: (
       <svg {...icon}>
         <circle cx="12" cy="12" r="9" />
@@ -59,6 +59,7 @@ export default function SlotFab({ kind, onClick, stacked = false }) {
       className={`slot-fab ${look.tone}${stacked ? " stacked" : ""}`}
       aria-label={`${look.label}. Tap for details.`}
       title={look.label}
+      onClick={onClick}
     >
       <span className="slot-fab-icon">{look.svg}</span>
       <span className="slot-fab-label">{look.label}</span>

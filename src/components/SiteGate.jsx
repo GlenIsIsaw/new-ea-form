@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Asks the Apps Script web app (?action=status) whether the site is open.
@@ -11,8 +11,8 @@ import { useCallback, useEffect, useState } from "react";
 // NOTE: this only controls what the visitor SEES. The script itself refuses submissions when the
 // site is closed, so hiding or editing this page in the browser cannot bypass the switch.
 // ---------------------------------------------------------------------------
-const VALID = ["OPEN", "CLOSED", "MAINTENANCE"];
-const POLL_MS = 60000; // re-check every 60 s while the page is open
+const VALID = ["OPEN", "CLOSED", "MAINTENANCE", "COUNTDOWN"];
+const POLL_MS = 25000; // re-check every 25 s while the page is open
 const RETRY_MS = 15000; // re-check faster after an error
 
 export function useSiteStatus(apiUrl) {
@@ -24,6 +24,10 @@ export function useSiteStatus(apiUrl) {
   const [closesAtMs, setClosesAtMs] = useState(0);
   const [closesText, setClosesText] = useState("");
   const [clockOffset, setClockOffset] = useState(0);
+
+  const [opensAtMs, setOpensAtMs] = useState(0);
+  const [opensText, setOpensText] = useState("");
+  const [online, setOnline] = useState(-1);
 
   const check = useCallback(async () => {
     try {
@@ -50,6 +54,11 @@ export function useSiteStatus(apiUrl) {
             ? data.closesText.slice(0, 80)
             : "",
         );
+        setOpensAtMs(Number(data.opensAtMs) > 0 ? Number(data.opensAtMs) : 0);
+        setOpensText(
+          typeof data.opensText === "string" ? data.opensText.slice(0, 80) : "",
+        );
+        setOnline(Number(data.online) >= 0 ? Number(data.online) : -1);
         if (Number(data.serverNow) > 0)
           setClockOffset(Number(data.serverNow) - Date.now());
       } else {
@@ -80,7 +89,20 @@ export function useSiteStatus(apiUrl) {
     return () => clearInterval(id);
   }, [check, status]);
 
-   return { status, setStatus, check, notice, noticeFrom, closing, closesAtMs, closesText, clockOffset };
+  return {
+    status,
+    setStatus,
+    check,
+    notice,
+    noticeFrom,
+    closing,
+    closesAtMs,
+    closesText,
+    clockOffset,
+    opensAtMs,
+    opensText,
+    online,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -194,3 +216,103 @@ export const StatusError = ({ onRetry }) => (
     retryText="Try again"
   />
 );
+
+const pad = (n) => String(n).padStart(2, "0");
+
+export function CountdownPage({
+  opensAtMs,
+  opensText,
+  clockOffset,
+  onDone,
+  online,
+  apiUrl,
+}) {
+  const [left, setLeft] = useState(
+    () => opensAtMs - (Date.now() + clockOffset),
+  );
+  const lastTry = useRef(0);
+  const zeroAt = useRef(0);
+  const retryGap = useRef(3000 + Math.random() * 7000);
+
+  useEffect(() => {
+    const tick = () => {
+      const ms = opensAtMs - (Date.now() + clockOffset);
+      setLeft(ms);
+      // at zero, ask the server; retry every 3 s until it lets the form through
+      if (ms <= 0 && !zeroAt.current)
+        zeroAt.current = Date.now() + Math.random() * 5000;
+      if (
+        ms <= 0 &&
+        Date.now() >= zeroAt.current &&
+        Date.now() - lastTry.current > retryGap.current
+      ) {
+        lastTry.current = Date.now();
+        onDone();
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [opensAtMs, clockOffset, onDone]);
+
+  useEffect(() => {
+    let vid = "";
+    try {
+      vid = localStorage.getItem("vid") || "";
+      if (!vid) {
+        vid = crypto.randomUUID();
+        localStorage.setItem("vid", vid);
+      }
+    } catch {
+      vid = crypto.randomUUID();
+    }
+    const ping = () => {
+      if (document.visibilityState !== "visible") return;
+      fetch(apiUrl, {
+        method: "POST",
+        body: new URLSearchParams({ action: "online", vid }),
+      }).catch(() => {});
+    };
+    const first = setTimeout(ping, Math.random() * 5000);
+    const every = setInterval(ping, 60000 + Math.random() * 10000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(every);
+    };
+  }, [apiUrl]);
+
+  const s = Math.max(0, Math.floor(left / 1000));
+  const parts = [
+    ["Days", Math.floor(s / 86400)],
+    ["Hours", Math.floor((s % 86400) / 3600)],
+    ["Minutes", Math.floor((s % 3600) / 60)],
+    ["Seconds", s % 60],
+  ];
+
+  return (
+    <div className="status-overlay" role="status" aria-live="polite">
+      <div className="status-card">
+        <p className="status-message">
+          The application form will open on <strong>{opensText}</strong>.
+        </p>
+        <div className="countdown-row">
+          {parts.map(([label, v]) => (
+            <div className="countdown-box" key={label}>
+              <div className="countdown-num">{pad(v)}</div>
+              <div className="countdown-label">{label}</div>
+            </div>
+          ))}
+        </div>
+        <p className="status-sub">This page will automatically refresh.</p>
+        {online >= 0 && (
+          <div className="online-count" aria-label="People online now">
+            <span className="online-dot" /> {online.toLocaleString("en-PH")}{" "}
+            online now
+          </div>
+        )}
+        <div className="status-divider" />
+        <p className="status-foot">Educational Assistance 2026</p>
+      </div>
+    </div>
+  );
+}
