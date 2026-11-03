@@ -36,11 +36,16 @@ import {
   ClosedPage,
   StatusError,
 } from "./components/SiteGate";
-import SlotToast, { NOTICE_MS, CLOSING_SHOW_MS, CLOSING_GAP_MS } from "./components/SlotToast";
+import SlotToast, {
+  NOTICE_MS,
+  CLOSING_SHOW_MS,
+  CLOSING_GAP_MS,
+} from "./components/SlotToast";
+import SlotFab from "./components/SlotFab";
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFntaeOi6xSmnaDl";
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbwlvnfngYJ7GkctSX9L-npvTKeVaSFgl821O1PaGdRhrwu5ZySjrR-OkEaG1r0Sya6emA/exec";
+  "https://script.google.com/macros/s/AKfycbzPh5w8p-p9wvoVqQs6xq8jJxA1Ghl4mpbllmE8CSxIEWXByXeT5wVyoqFQajPASbsucQ/exec";
 
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);
@@ -208,15 +213,20 @@ export default function App() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaError, setCaptchaError] = useState("");
   const turnstileRef = useRef(null);
+  const closingClickTimer = useRef(null);
   const {
     status,
     setStatus,
     check: recheckStatus,
     notice,
-    noticeFrom, closing, closesAtMs, closesText, clockOffset,
+    noticeFrom,
+    closing,
+    closesAtMs,
+    closesText,
+    clockOffset,
   } = useSiteStatus(API_URL);
 
-    const [closingVisible, setClosingVisible] = useState(false);
+  const [closingVisible, setClosingVisible] = useState(false);
   const [closingRemaining, setClosingRemaining] = useState("");
 
   // Slot pop-up: appears when the page opens (and again whenever you switch a notice on), stays 7 seconds, one at a time
@@ -234,14 +244,14 @@ export default function App() {
     if (notice === lastNotice.current) return;
     lastNotice.current = notice;
     setNoticeKind(notice);
-        setClosingVisible(false); // one pop-up at a time
+    setClosingVisible(false); // one pop-up at a time
     setNoticeVisible(true);
     clearTimeout(noticeTimer.current);
     noticeTimer.current = setTimeout(() => setNoticeVisible(false), NOTICE_MS);
   }, [notice, status]);
   useEffect(() => () => clearTimeout(noticeTimer.current), []);
 
-    const noticeVisibleRef = useRef(false);
+  const noticeVisibleRef = useRef(false);
   const clockRef = useRef(0);
   useEffect(() => {
     noticeVisibleRef.current = noticeVisible;
@@ -261,7 +271,10 @@ export default function App() {
       timer = setTimeout(show, CLOSING_GAP_MS);
     };
     const show = () => {
-      if (noticeVisibleRef.current) { timer = setTimeout(show, 1000); return; }
+      if (noticeVisibleRef.current) {
+        timer = setTimeout(show, 1000);
+        return;
+      }
       if (left() <= 0) return;
       setClosingRemaining(remainingText(left()));
       setClosingVisible(true);
@@ -735,12 +748,55 @@ export default function App() {
   if (status === "CLOSED") return <ClosedPage onRetry={recheckStatus} />;
   if (status === "ERROR") return <StatusError onRetry={recheckStatus} />;
 
+  const showSlotToast = () => {
+    setNoticeKind(notice === "NONE" ? "AVAILABLE" : notice);
+    setClosingVisible(false); // one pop-up at a time
+    setNoticeVisible(true);
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNoticeVisible(false), NOTICE_MS);
+  };
+
+  const closingActive =
+    closing === "ON" && closesAtMs > Date.now() + clockOffset;
+  const showSlotFab = notice !== "NONE" || !closingActive;
+  const showClosingToast = () => {
+    const left = closesAtMs - (Date.now() + clockOffset);
+    if (left <= 0) return;
+    setClosingRemaining(remainingText(left));
+    setNoticeVisible(false); // one pop-up at a time
+    setClosingVisible(true);
+    clearTimeout(closingClickTimer.current);
+    closingClickTimer.current = setTimeout(
+      () => setClosingVisible(false),
+      CLOSING_SHOW_MS,
+    );
+  };
+
   const noticeToast = (
     <>
-      <SlotToast show={noticeVisible} kind={noticeKind} from={noticeFrom}
-        seconds={NOTICE_MS / 1000} onClose={() => setNoticeVisible(false)} />
-      <SlotToast show={closingVisible} kind="CLOSING" closesText={closesText} remaining={closingRemaining}
-        seconds={CLOSING_SHOW_MS / 1000} onClose={() => setClosingVisible(false)} />
+      {showSlotFab && <SlotFab kind={notice} onClick={showSlotToast} />}
+      {closingActive && (
+        <SlotFab
+          kind="CLOSING"
+          stacked={showSlotFab}
+          onClick={showClosingToast}
+        />
+      )}
+      <SlotToast
+        show={noticeVisible}
+        kind={noticeKind}
+        from={noticeFrom}
+        seconds={NOTICE_MS / 1000}
+        onClose={() => setNoticeVisible(false)}
+      />
+      <SlotToast
+        show={closingVisible}
+        kind="CLOSING"
+        closesText={closesText}
+        remaining={closingRemaining}
+        seconds={CLOSING_SHOW_MS / 1000}
+        onClose={() => setClosingVisible(false)}
+      />
     </>
   );
 
