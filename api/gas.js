@@ -16,11 +16,17 @@ export default async function handler(req, res) {
   // status: cached at Vercel's CDN for 10 s, so all students share one Apps Script call
   if (req.method === "GET" && action === "status") {
     try {
-      const r = await fetch(`${GAS}?action=status&key=${encodeURIComponent(KEY)}`);
+      const r = await fetch(
+        `${GAS}?action=status&key=${encodeURIComponent(KEY)}`,
+      );
       const data = await r.json();
-      if (!data || typeof data.state !== "string") throw new Error("bad upstream");
+      if (!data || typeof data.state !== "string")
+        throw new Error("bad upstream");
       delete data.serverNow; // would be stale once cached; the page uses ?action=time instead
-      res.setHeader("Cache-Control", "public, max-age=0, s-maxage=10, stale-while-revalidate=5");
+      res.setHeader(
+        "Cache-Control",
+        "public, max-age=0, s-maxage=10, stale-while-revalidate=5",
+      );
       return res.status(200).json(data);
     } catch {
       res.setHeader("Cache-Control", "no-store"); // never cache a failure
@@ -31,7 +37,10 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const b = req.body && typeof req.body === "object" ? req.body : {};
     const isPing = b.action === "online";
-    const isSubmit = typeof b.category === "string" && typeof b.turnstileToken === "string" && b.turnstileToken.length > 10;
+    const isSubmit =
+      typeof b.category === "string" &&
+      typeof b.turnstileToken === "string" &&
+      b.turnstileToken.length > 10;
     if (isPing && !/^[A-Za-z0-9-]{16,64}$/.test(String(b.vid || ""))) {
       return res.status(200).json({ ok: true }); // junk ping: ignore without waking Apps Script
     }
@@ -40,7 +49,8 @@ export default async function handler(req, res) {
     }
     try {
       const body = new URLSearchParams();
-      for (const [k, v] of Object.entries(b)) if (k !== "key") body.set(k, String(v));
+      for (const [k, v] of Object.entries(b))
+        if (k !== "key") body.set(k, String(v));
       body.set("key", KEY);
       const r = await fetch(GAS, { method: "POST", body });
       const text = await r.text();
@@ -49,7 +59,12 @@ export default async function handler(req, res) {
       return res.status(200).send(text);
     } catch {
       res.setHeader("Cache-Control", "no-store");
-      return res.status(502).json({ success: false, error: "Unable to reach the server. Please try again." });
+      return res
+        .status(502)
+        .json({
+          success: false,
+          error: "Unable to reach the server. Please try again.",
+        });
     }
   }
 
