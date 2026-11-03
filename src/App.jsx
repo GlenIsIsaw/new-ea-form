@@ -45,8 +45,7 @@ import SlotToast, {
 import SlotFab from "./components/SlotFab";
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFntaeOi6xSmnaDl";
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbx1GfXJEA3VBqu59CLk4mngpgJb0QanaYmCJuq3KAi2RZaY2fDFrzCF5v8UntmeeTJVtg/exec";
+const API_URL = "/api/gas";
 
 const MAX_BIRTH_YEAR = 2014;
 const YEARS = Array.from({ length: 101 }, (_, i) => MAX_BIRTH_YEAR - i);

@@ -31,9 +31,8 @@ export function useSiteStatus(apiUrl) {
 
   const check = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}?action=status&t=${Date.now()}`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`${apiUrl}?action=status`);
+      if (!res.ok) throw new Error("status check failed");
       const data = await res.json();
       if (VALID.includes(data.state)) {
         setStatus(data.state);
@@ -68,6 +67,17 @@ export function useSiteStatus(apiUrl) {
       // a failed re-check keeps the last known state; only the very first check (or a previous error) shows ERROR
       setStatus((prev) => (prev === null || prev === "ERROR" ? "ERROR" : prev));
     }
+  }, [apiUrl]);
+
+    useEffect(() => {
+    const t0 = Date.now();
+    fetch(`${apiUrl}?action=time`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Number(d.serverNow) > 0)
+          setClockOffset(Number(d.serverNow) - (t0 + Date.now()) / 2);
+      })
+      .catch(() => {});
   }, [apiUrl]);
 
   useEffect(() => {
@@ -274,7 +284,7 @@ export function CountdownPage({
       }).catch(() => {});
     };
     const first = setTimeout(ping, Math.random() * 5000);
-    const every = setInterval(ping, 60000 + Math.random() * 10000);
+    const every = setInterval(ping, 120000 + Math.random() * 15000);
     return () => {
       clearTimeout(first);
       clearInterval(every);
