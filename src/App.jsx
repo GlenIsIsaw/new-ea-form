@@ -227,6 +227,7 @@ export default function App() {
     opensAtMs,
     opensText,
     online,
+    traffic,
   } = useSiteStatus(API_URL);
 
   const [closingVisible, setClosingVisible] = useState(false);
@@ -253,6 +254,27 @@ export default function App() {
     noticeTimer.current = setTimeout(() => setNoticeVisible(false), NOTICE_MS);
   }, [notice, status]);
   useEffect(() => () => clearTimeout(noticeTimer.current), []);
+
+  const [trafficVisible, setTrafficVisible] = useState(false);
+  const trafficTimer = useRef(null);
+  const lastTraffic = useRef(false);
+  useEffect(() => {
+    if (status !== "OPEN" || !traffic) {
+      lastTraffic.current = false;
+      clearTimeout(trafficTimer.current);
+      setTrafficVisible(false);
+      return;
+    }
+    if (lastTraffic.current) return;
+    lastTraffic.current = true;
+    setTrafficVisible(true);
+    clearTimeout(trafficTimer.current);
+    trafficTimer.current = setTimeout(
+      () => setTrafficVisible(false),
+      NOTICE_MS,
+    );
+  }, [traffic, status]);
+  useEffect(() => () => clearTimeout(trafficTimer.current), []);
 
   const noticeVisibleRef = useRef(false);
   const clockRef = useRef(0);
@@ -787,6 +809,16 @@ export default function App() {
     );
   };
 
+  const trafficLevel = (showSlotFab ? 1 : 0) + (closingActive ? 1 : 0);
+  const showTrafficToast = () => {
+    setTrafficVisible(true);
+    clearTimeout(trafficTimer.current);
+    trafficTimer.current = setTimeout(
+      () => setTrafficVisible(false),
+      NOTICE_MS,
+    );
+  };
+
   const noticeToast = (
     <>
       {showSlotFab && <SlotFab kind={notice} onClick={showSlotToast} />}
@@ -795,6 +827,13 @@ export default function App() {
           kind="CLOSING"
           stacked={showSlotFab}
           onClick={showClosingToast}
+        />
+      )}
+      {traffic && (
+        <SlotFab
+          kind="TRAFFIC"
+          level={trafficLevel}
+          onClick={showTrafficToast}
         />
       )}
       <SlotToast
@@ -811,6 +850,13 @@ export default function App() {
         remaining={closingRemaining}
         seconds={CLOSING_SHOW_MS / 1000}
         onClose={() => setClosingVisible(false)}
+      />
+            <SlotToast
+        show={trafficVisible}
+        kind="TRAFFIC"
+        below
+        seconds={NOTICE_MS / 1000}
+        onClose={() => setTrafficVisible(false)}
       />
     </>
   );

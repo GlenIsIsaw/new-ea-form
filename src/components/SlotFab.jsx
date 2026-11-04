@@ -49,14 +49,24 @@ const LOOK = {
       </svg>
     ),
   },
+  TRAFFIC: {
+    tone: "traffic",
+    label: "Heavy traffic",
+    svg: (
+      <svg {...icon}>
+        <path d="M12 3l10 18H2z" />
+        <path d="M12 10v5M12 18h.01" />
+      </svg>
+    ),
+  },
 };
 
-export default function SlotFab({ kind, onClick, stacked = false }) {
+export default function SlotFab({ kind, onClick, stacked = false, level = 0 }) {
   const look = LOOK[kind] || LOOK.NONE;
   return (
     <button
       type="button"
-      className={`slot-fab ${look.tone}${stacked ? " stacked" : ""}`}
+      className={`slot-fab ${look.tone}${stacked ? " stacked" : ""}${level ? ` level-${level}` : ""}`}
       aria-label={`${look.label}. Tap for details.`}
       title={look.label}
       onClick={onClick}

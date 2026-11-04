@@ -11,16 +11,14 @@ const OPTIONS = [
     text: "Choose this if you are applying through an authorization, you are a minor, or you are a Senior High School student.",
     icon: (
       <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        fill="currentColor"
+        className="bi bi-people-fill"
+        viewBox="0 0 16 16"
       >
-        <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" />
-        <path d="M9 12l2 2 4-4" />
+        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
       </svg>
     ),
   },
@@ -30,17 +28,14 @@ const OPTIONS = [
     text: "Choose this if you are currently enrolled in college.",
     icon: (
       <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        fill="currentColor"
+        className="bi bi-person-fill"
+        viewBox="0 0 16 16"
       >
-        <path d="M2 9l10-5 10 5-10 5z" />
-        <path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" />
-        <path d="M22 9v6" />
+        <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
       </svg>
     ),
   },

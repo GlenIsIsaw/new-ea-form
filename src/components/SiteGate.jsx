@@ -28,6 +28,7 @@ export function useSiteStatus(apiUrl) {
   const [opensAtMs, setOpensAtMs] = useState(0);
   const [opensText, setOpensText] = useState("");
   const [online, setOnline] = useState(-1);
+  const [traffic, setTraffic] = useState(false);
 
   const check = useCallback(async () => {
     try {
@@ -58,6 +59,7 @@ export function useSiteStatus(apiUrl) {
           typeof data.opensText === "string" ? data.opensText.slice(0, 80) : "",
         );
         setOnline(Number(data.online) >= 0 ? Number(data.online) : -1);
+        setTraffic(data.traffic === true);
         if (Number(data.serverNow) > 0)
           setClockOffset(Number(data.serverNow) - Date.now());
       } else {
@@ -112,6 +114,7 @@ export function useSiteStatus(apiUrl) {
     opensAtMs,
     opensText,
     online,
+    traffic,
   };
 }
 

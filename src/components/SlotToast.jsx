@@ -16,7 +16,7 @@ const COPY = {
     body: ({ from }) =>
       `Slots for this batch are now full. Applications submitted from ${
         from || "now on"
-      } will be placed under waitlist or subject to the next batch. Thank you for understanding.`,
+      } will be placed under WAITLIST or subject to the NEXT BATCH. Thank you for understanding.`,
   },
   AVAILABLE: {
     title: "Slots are available",
@@ -27,6 +27,11 @@ const COPY = {
     title: "Application closing soon",
     body: ({ closesText, remaining }) =>
       `Application closes on ${closesText}. Please submit your application now. Time remaining is ${remaining}.`,
+  },
+  TRAFFIC: {
+    title: "Heavy traffic notice",
+    body: () =>
+      "Some users may experience temporary errors due to high website traffic. We kindly ask for your patience and understanding. Please try again after a few minutes.",
   },
 };
 
@@ -74,18 +79,30 @@ export default function SlotToast({
   remaining,
   seconds = 7,
   onClose,
+  below = false,
 }) {
   const copy = COPY[kind];
   if (!copy) return null;
   const tone =
-    { FULL: "full", CLOSING: "closing", AVAILABLE: "available" }[kind] ||
-    "filling";
+    {
+      FULL: "full",
+      CLOSING: "closing",
+      AVAILABLE: "available",
+      TRAFFIC: "traffic",
+    }[kind] || "filling";
   const Icon =
-    { FULL: AlertIcon, AVAILABLE: CheckIcon, CLOSING: HourglassIcon }[kind] ||
-    ClockIcon;
+    {
+      FULL: AlertIcon,
+      AVAILABLE: CheckIcon,
+      CLOSING: HourglassIcon,
+      TRAFFIC: AlertIcon,
+    }[kind] || ClockIcon;
 
   return (
-    <ToastContainer className="slot-toast-container" containerPosition="fixed">
+    <ToastContainer
+      className={`slot-toast-container${below ? " below" : ""}`}
+      containerPosition="fixed"
+    >
       <Toast
         show={show}
         onClose={onClose}
