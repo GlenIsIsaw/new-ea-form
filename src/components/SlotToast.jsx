@@ -7,7 +7,7 @@ export const CLOSING_GAP_MS = 8000; // closing pop-up: pause before it pops up a
 // Edit the wording here.
 const COPY = {
   FILLING: {
-    title: "Slots are filling up quickly",
+    title: "Slots are filling out quickly",
     body: () =>
       "Slots are filling out quickly and will run out soon. Please submit your application as early as you can.",
   },

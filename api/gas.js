@@ -4,7 +4,6 @@ const GAS = process.env.APPS_SCRIPT_URL;
 const KEY = process.env.PROXY_KEY;
 
 export default async function handler(req, res) {
-  if (!GAS || !KEY) return res.status(500).json({ error: "Not configured" });
   const action = String(req.query.action || "");
 
   // clock check: tiny, never cached, never touches Apps Script
@@ -12,6 +11,8 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({ serverNow: Date.now() });
   }
+
+  if (!GAS || !KEY) return res.status(500).json({ error: "Not configured" });
 
   // status: cached at Vercel's CDN for 10 s, so all students share one Apps Script call
   if (req.method === "GET" && action === "status") {
@@ -35,6 +36,14 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    const allowed = [
+      "https://new-ea-form.vercel.app",
+      "http://localhost:3000",
+      "https://2dcn-educational-assistance.vercel.app",
+    ];
+    if (!allowed.includes(String(req.headers.origin || ""))) {
+      return res.status(403).json({ success: false, error: "Not allowed." });
+    }
     const b = req.body && typeof req.body === "object" ? req.body : {};
     const isPing = b.action === "online";
     const isSubmit =
@@ -59,12 +68,10 @@ export default async function handler(req, res) {
       return res.status(200).send(text);
     } catch {
       res.setHeader("Cache-Control", "no-store");
-      return res
-        .status(502)
-        .json({
-          success: false,
-          error: "Unable to reach the server. Please try again.",
-        });
+      return res.status(502).json({
+        success: false,
+        error: "Unable to reach the server. Please try again.",
+      });
     }
   }
 

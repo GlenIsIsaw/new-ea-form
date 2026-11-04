@@ -180,9 +180,9 @@ export default function ReviewModal({
           />
           <span className="review-ack-text">
             I confirm that the information above is true and correct. I consent
-            to the use of my personal data solely for the TDP Application and
-            acknowledge that I am responsible for the accuracy of the
-            information I submitted.
+            to the use of my personal data solely for the Educational Assistance
+            Application and acknowledge that I am responsible for the accuracy
+            of the information I submitted.
           </span>
         </label>
       </div>

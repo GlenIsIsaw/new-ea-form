@@ -69,7 +69,7 @@ export function useSiteStatus(apiUrl) {
     }
   }, [apiUrl]);
 
-    useEffect(() => {
+  useEffect(() => {
     const t0 = Date.now();
     fetch(`${apiUrl}?action=time`, { cache: "no-store" })
       .then((r) => r.json())
@@ -196,7 +196,7 @@ export const MaintenancePage = ({ onRetry }) => (
     icon={WrenchIcon}
     title="System Under Maintenance"
     message="We are making improvements to the system. Please check back in a little while."
-    sub="You don't need to do anything. This page checks on its own, and the form will appear as soon as we are back."
+    sub="You don't need to do anything. The digital form will appear as soon as we are back."
     onRetry={onRetry}
   />
 );
