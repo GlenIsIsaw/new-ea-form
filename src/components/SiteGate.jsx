@@ -316,11 +316,14 @@ export function CountdownPage({
             </div>
           ))}
         </div>
-        <p className="status-sub">This page will automatically refresh.</p>
+        <p className="status-sub">This is a waiting area. This page will automatically refresh.</p>
         {online >= 0 && (
           <div className="online-count" aria-label="People online now">
-            <span className="online-dot" /> {online.toLocaleString("en-PH")}{" "}
-            online now
+            <span className="online-dot" />
+            <span className="online-text">
+              There are currently {online.toLocaleString("en-PH")} other people
+              are also waiting here.
+            </span>
           </div>
         )}
         <div className="status-divider" />
