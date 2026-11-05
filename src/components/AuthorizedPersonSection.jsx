@@ -48,6 +48,7 @@ export default function AuthorizedPersonSection({
             <Label required>Last Name</Label>
             <Form.Control
               value={a.lastName}
+              maxLength={50}
               onChange={nameSet("lastName")}
               onBlur={blur("lastName")}
               isInvalid={!!errors.lastName}
@@ -59,6 +60,7 @@ export default function AuthorizedPersonSection({
             <Label required>First Name</Label>
             <Form.Control
               value={a.firstName}
+              maxLength={50}
               onChange={nameSet("firstName")}
               onBlur={blur("firstName")}
               isInvalid={!!errors.firstName}
@@ -70,6 +72,7 @@ export default function AuthorizedPersonSection({
             <Label>Middle Name</Label>
             <Form.Control
               value={a.middleName}
+              maxLength={50}
               onChange={nameSet("middleName")}
               onBlur={blur("middleName")}
               isInvalid={!!errors.middleName}
@@ -316,6 +319,7 @@ export default function AuthorizedPersonSection({
             <Label>Street / Purok</Label>
             <Form.Control
               value={a.street}
+              maxLength={50}
               onChange={set("street")}
               autoComplete="street-address"
             />

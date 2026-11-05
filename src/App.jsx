@@ -213,6 +213,7 @@ export default function App() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaError, setCaptchaError] = useState("");
   const turnstileRef = useRef(null);
+  const submittingRef = useRef(false);
   const closingClickTimer = useRef(null);
   const {
     status,
@@ -583,6 +584,8 @@ export default function App() {
       );
       return;
     }
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setShowConfirm(false);
     setSubmitting(true);
     try {
@@ -669,6 +672,7 @@ export default function App() {
       alert("Unable to connect. Please check your connection and try again.");
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
     setCaptchaToken("");
     turnstileRef.current?.reset();
@@ -851,7 +855,7 @@ export default function App() {
         seconds={CLOSING_SHOW_MS / 1000}
         onClose={() => setClosingVisible(false)}
       />
-            <SlotToast
+      <SlotToast
         show={trafficVisible}
         kind="TRAFFIC"
         below
@@ -929,6 +933,7 @@ export default function App() {
                     <Label required>Last Name</Label>
                     <Form.Control
                       value={f.lastName}
+                      maxLength={50}
                       onChange={nameText("lastName")}
                       onBlur={blur("lastName")}
                       isInvalid={!!errors.lastName}
@@ -940,6 +945,7 @@ export default function App() {
                     <Label required>First Name</Label>
                     <Form.Control
                       value={f.firstName}
+                      maxLength={50}
                       onChange={nameText("firstName")}
                       onBlur={blur("firstName")}
                       isInvalid={!!errors.firstName}
@@ -951,6 +957,7 @@ export default function App() {
                     <Label>Middle Name</Label>
                     <Form.Control
                       value={f.middleName}
+                      maxLength={50}
                       onChange={nameText("middleName")}
                       onBlur={blur("middleName")}
                       isInvalid={!!errors.middleName}
@@ -1156,6 +1163,7 @@ export default function App() {
                     <Label>Occupation</Label>
                     <Form.Control
                       value={f.occupation}
+                      maxLength={100}
                       onChange={(e) => {
                         update("occupation", e.target.value.toUpperCase());
                         if (errors.salary) setError("salary", "");
@@ -1201,6 +1209,7 @@ export default function App() {
                     <Form.Control
                       type="email"
                       value={f.email}
+                      maxLength={100}
                       onChange={text("email")}
                       onBlur={blur("email")}
                       placeholder="name@example.com"
@@ -1281,6 +1290,7 @@ export default function App() {
                     <Label>Street / Purok</Label>
                     <Form.Control
                       value={ef.street}
+                      maxLength={100}
                       onChange={text("street")}
                       disabled={useSameAuth}
                       autoComplete="street-address"

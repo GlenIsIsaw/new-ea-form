@@ -91,6 +91,7 @@ export default function FamilyMemberCard({
             <Label required>Last Name</Label>
             <Form.Control
               value={m.lastName}
+              maxLength={50}
               onChange={nameSet("lastName")}
               onBlur={blur("lastName")}
               isInvalid={!!errors.lastName}
@@ -102,6 +103,7 @@ export default function FamilyMemberCard({
             <Label required>First Name</Label>
             <Form.Control
               value={m.firstName}
+              maxLength={50}
               onChange={nameSet("firstName")}
               onBlur={blur("firstName")}
               isInvalid={!!errors.firstName}
@@ -113,6 +115,7 @@ export default function FamilyMemberCard({
             <Label optional>Middle Name</Label>
             <Form.Control
               value={m.middleName}
+              maxLength={50}
               onChange={nameSet("middleName")}
               onBlur={blur("middleName")}
               isInvalid={!!errors.middleName}
@@ -331,6 +334,7 @@ export default function FamilyMemberCard({
             <Label optional>Street / Purok</Label>
             <Form.Control
               value={m.street}
+              maxLength={50}
               onChange={set("street")}
               disabled={!!m.sameAddress}
             />
