@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // NOTE: this only controls what the visitor SEES. The script itself refuses submissions when the
 // site is closed, so hiding or editing this page in the browser cannot bypass the switch.
 // ---------------------------------------------------------------------------
-const VALID = ["OPEN", "CLOSED", "MAINTENANCE", "COUNTDOWN"];
+const VALID = ["OPEN", "CLOSED", "MAINTENANCE", "COUNTDOWN", "WAITING"];
 const POLL_MS = 25000; // re-check every 25 s while the page is open
 const RETRY_MS = 15000; // re-check faster after an error
 
@@ -247,6 +247,8 @@ export function CountdownPage({
   const zeroAt = useRef(0);
   const retryGap = useRef(3000 + Math.random() * 7000);
 
+  const counting = online >= 0;
+
   useEffect(() => {
     const tick = () => {
       const ms = opensAtMs - (Date.now() + clockOffset);
@@ -279,6 +281,7 @@ export function CountdownPage({
     } catch {
       vid = crypto.randomUUID();
     }
+    if (!counting) return;
     const ping = () => {
       if (document.visibilityState !== "visible") return;
       fetch(apiUrl, {
@@ -292,7 +295,7 @@ export function CountdownPage({
       clearTimeout(first);
       clearInterval(every);
     };
-  }, [apiUrl]);
+  }, [apiUrl, counting]);
 
   const s = Math.max(0, Math.floor(left / 1000));
   const parts = [
@@ -316,7 +319,9 @@ export function CountdownPage({
             </div>
           ))}
         </div>
-        <p className="status-sub">This is a waiting area. This page will automatically refresh.</p>
+        <p className="status-sub">
+          This is a waiting area. This page will automatically refresh.
+        </p>
         {online >= 0 && (
           <div className="online-count" aria-label="People online now">
             <span className="online-dot" />
@@ -332,3 +337,31 @@ export function CountdownPage({
     </div>
   );
 }
+
+const HourglassIcon = () => (
+  <svg {...icon}>
+    <path d="M6 3h12M6 21h12" />
+    <path d="M7 3v3a5 5 0 0 0 2 4l3 2-3 2a5 5 0 0 0-2 4v3M17 3v3a5 5 0 0 1-2 4l-3 2 3 2a5 5 0 0 1 2 4v3" />
+  </svg>
+);
+
+const WaitingLogo = () => (
+  <img
+    src="/PadagosLang.png"
+    alt="Official logo"
+    className="status-logo"
+    width="100"
+    height="100"
+  />
+);
+
+export const WaitingPage = () => (
+  <StatusCard
+    role="status"
+    tone="waiting"
+    icon={WaitingLogo}
+    title="Welcome to the Waiting Area"
+    message="Kindly remain on this page and wait until the application opens. Thank you for your patience."
+    sub="This page will automatically refresh."
+  />
+);

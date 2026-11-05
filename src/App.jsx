@@ -36,6 +36,7 @@ import {
   ClosedPage,
   StatusError,
   CountdownPage,
+  WaitingPage,
 } from "./components/SiteGate";
 import SlotToast, {
   NOTICE_MS,
@@ -664,7 +665,9 @@ export default function App() {
       const res = await fetch(API_URL, { method: "POST", body });
       const result = await res.json();
       if (result.success) setDone(true);
-      else if (["MAINTENANCE", "CLOSED", "COUNTDOWN"].includes(result.code))
+      else if (
+        ["MAINTENANCE", "CLOSED", "COUNTDOWN", "WAITING"].includes(result.code)
+      )
         setStatus(result.code);
       else alert(result.error || "Submission failed. Please try again.");
     } catch (err) {
@@ -788,6 +791,8 @@ export default function App() {
         apiUrl={API_URL}
       />
     );
+
+  if (status === "WAITING") return <WaitingPage />;
 
   const showSlotToast = () => {
     setNoticeKind(notice === "NONE" ? "AVAILABLE" : notice);
