@@ -1,6 +1,6 @@
 import { Container } from "react-bootstrap";
 
-export default function SuccessPage({ onNewSubmission }) {
+export default function SuccessPage({ onNewSubmission, secondsLeft }) {
   return (
     <div className="success-page-wrapper">
       <Container
@@ -29,7 +29,7 @@ export default function SuccessPage({ onNewSubmission }) {
           <h2 className="success-title">Application Submitted!</h2>
           <br />
           <p className="success-message">
-            Thank you. Your information has been successfully recorded.
+            Your information has been successfully recorded.
           </p>
           <br />
           <p className="success-message">
@@ -37,13 +37,26 @@ export default function SuccessPage({ onNewSubmission }) {
             <strong className="text-uppercase">
               do not guarantee admission to the program
             </strong>
-            . Your application shall undergo validation in accordance with
-            existing guidelines.
+            . It shall undergo validation in accordance with existing
+            guidelines.
           </p>
+
+          {secondsLeft > 0 && (
+            <p className="success-message mt-2">
+              Redirecting you to our website in{" "}
+              <strong>
+                {secondsLeft} second{secondsLeft === 1 ? "" : "s"}
+              </strong>
+              ...
+            </p>
+          )}
 
           <div className="success-divider" />
 
-          <button className="success-btn text-capitalize" onClick={onNewSubmission}>
+          <button
+            className="success-btn text-capitalize"
+            onClick={onNewSubmission}
+          >
             Thank you very much
           </button>
         </div>
