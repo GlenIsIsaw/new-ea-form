@@ -10,6 +10,7 @@ const RULES = [
   { title: "Check your numbers", body: "Your contact number must be 11 digits and start with 09. Your PhilSys ID number must be exactly 16 digits." },
   { title: "Use a valid email address", body: "Use an email address that you can access, because we may contact you through it." },
   { title: "Review before submitting", body: "After clicking Review Form, check every entry, tick the confirmation box, then submit. You cannot edit your information after submission." },
+  { title: "Free of Charge", body: "Our online application is 100% FREE OF CHARGE; no staff member of our office will ever ask you to pay any amount or exchange for your application." },
 ];
 
 export default function InstructionModal({ show, onAccept }) {

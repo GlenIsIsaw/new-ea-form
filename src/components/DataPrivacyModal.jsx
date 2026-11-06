@@ -123,7 +123,7 @@ export default function DataPrivacyModal({ show, onAccept }) {
             By proceeding with this application, you acknowledge that all
             information you provide is true and correct, and that your personal
             data will be collected, stored, and processed exclusively for the
-            purpose of the Tulong Dunong Program. Misrepresentation of any
+            purpose of the Educational Assistance Program. Misrepresentation of any
             information may result in disqualification.
           </p>
         </div>
