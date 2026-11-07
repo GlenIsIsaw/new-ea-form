@@ -1,7 +1,11 @@
+import { handleSubmit } from "./_submit.js";
+
 export const config = { maxDuration: 60 }; // Apps Script can hold a submission up to 30 s; check your Vercel plan's maximum
 
 const GAS = process.env.APPS_SCRIPT_URL;
 const KEY = process.env.PROXY_KEY;
+
+let lastStatus = null;
 
 export default async function handler(req, res) {
   const action = String(req.query.action || "");
@@ -23,14 +27,16 @@ export default async function handler(req, res) {
       const data = await r.json();
       if (!data || typeof data.state !== "string")
         throw new Error("bad upstream");
-      delete data.serverNow; // would be stale once cached; the page uses ?action=time instead
-      res.setHeader(
-        "Cache-Control",
-        "public, max-age=0, s-maxage=10, stale-while-revalidate=5",
-      );
+      delete data.serverNow;
+      lastStatus = data;
+      res.setHeader("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=60, stale-if-error=600");
       return res.status(200).json(data);
     } catch {
-      res.setHeader("Cache-Control", "no-store"); // never cache a failure
+      if (lastStatus) {
+        res.setHeader("Cache-Control", "public, max-age=0, s-maxage=15");
+        return res.status(200).json(lastStatus);
+      }
+      res.setHeader("Cache-Control", "no-store");
       return res.status(502).json({ error: "Upstream error" });
     }
   }
@@ -55,6 +61,15 @@ export default async function handler(req, res) {
     }
     if (!isPing && !isSubmit) {
       return res.status(400).json({ success: false, error: "Bad request." });
+    }
+        if (isSubmit && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+      res.setHeader("Cache-Control", "no-store");
+      try {
+        return res.status(200).json(await handleSubmit(b, GAS, KEY));
+      } catch (e) {
+        console.error(e);
+        return res.status(200).json({ success: false, error: "The system is busy. Please wait a minute, then press Submit again." });
+      }
     }
     try {
       const body = new URLSearchParams();
