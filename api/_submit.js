@@ -101,7 +101,7 @@ async function siteState(gas, key) {
     const d = await r.json();
     if (d && typeof d.state === "string") st = { at: Date.now(), state: d.state, notice: d.notice || "NONE" };
   } catch {}
-  return st; // may be slightly stale if Apps Script is busy
+  return st;
 }
 
 async function turnstileOk(token) {
@@ -120,9 +120,9 @@ export async function handleSubmit(b, gas, key) {
   if (!CATS.includes(category)) return { success: false, error: "Please choose a category." };
   if (s(b.family).length > 20000 || s(b.authorized).length > 5000) return { success: false, error: "Request too large." };
 
+  // if Apps Script cannot answer the status check, the submission continues (Turnstile and validation still run)
   const state = await siteState(gas, key);
-  if (!state.state) return { success: false, error: BUSY };
-  if (state.state !== "OPEN") return { success: false, code: state.state, error: "The application is not available." };
+  if (state.state && state.state !== "OPEN") return { success: false, code: state.state, error: "The application is not available." };
 
   let a = null, fam = null;
   try { fam = JSON.parse(b.family || "[]"); } catch {}
@@ -150,7 +150,7 @@ export async function handleSubmit(b, gas, key) {
   };
   const r = await fetch(`${SB}/rest/v1/applications`, {
     method: "POST",
-    headers: { apikey: SBK, Authorization: `Bearer ${SBK}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    headers: { apikey: SBK, "Content-Type": "application/json", Prefer: "return=minimal" },
     body: JSON.stringify(row),
   });
   if (r.ok) return { success: true };
