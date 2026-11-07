@@ -1,7 +1,7 @@
 // Schools/universities inside Camarines Norte. Each campus is its own entry.
 // Compiled from CHED/SUC records and a provincial list of tertiary schools, so please verify it,
 // and add or rename entries as needed.
-export const OUTSIDE_CN = "OUTSIDE CAMARINES NORTE";
+export const OUTSIDE_CN = "OUTSIDE CAMARINES NORTE OR OTHER SCHOOLS";
 
 export const SCHOOL_GROUPS = [
   {
